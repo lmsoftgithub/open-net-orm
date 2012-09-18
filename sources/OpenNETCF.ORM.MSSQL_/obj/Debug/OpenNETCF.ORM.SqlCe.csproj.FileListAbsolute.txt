@@ -1,0 +1,8 @@
+C:\Users\stefan.kastory\Documents\Visual Studio 2010\Projects\OpenNETCF.ORM\OpenNETCF.ORM.SqlCe\obj\Debug\ResolveAssemblyReference.cache
+C:\Users\stefan.kastory\Documents\Visual Studio 2010\Projects\OpenNETCF.ORM\OpenNETCF.ORM.SqlCe\bin\Debug\OpenNETCF.ORM.SqlCe.dll
+C:\Users\stefan.kastory\Documents\Visual Studio 2010\Projects\OpenNETCF.ORM\OpenNETCF.ORM.SqlCe\bin\Debug\OpenNETCF.ORM.SqlCe.pdb
+C:\Users\stefan.kastory\Documents\Visual Studio 2010\Projects\OpenNETCF.ORM\OpenNETCF.ORM.SqlCe\bin\Debug\OpenNETCF.ORM.dll
+C:\Users\stefan.kastory\Documents\Visual Studio 2010\Projects\OpenNETCF.ORM\OpenNETCF.ORM.SqlCe\bin\Debug\System.Data.SqlServerCe.dll
+C:\Users\stefan.kastory\Documents\Visual Studio 2010\Projects\OpenNETCF.ORM\OpenNETCF.ORM.SqlCe\bin\Debug\OpenNETCF.ORM.pdb
+C:\Users\stefan.kastory\Documents\Visual Studio 2010\Projects\OpenNETCF.ORM\OpenNETCF.ORM.SqlCe\obj\Debug\OpenNETCF.ORM.SqlCe.dll
+C:\Users\stefan.kastory\Documents\Visual Studio 2010\Projects\OpenNETCF.ORM\OpenNETCF.ORM.SqlCe\obj\Debug\OpenNETCF.ORM.SqlCe.pdb

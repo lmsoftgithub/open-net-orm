@@ -1,0 +1,13 @@
+C:\Users\stefan.kastory\Documents\Visual Studio 2010\Projects\OpenNETCF.ORM\Tests\OpenNETCF.ORM.Test\obj\Debug\ResolveAssemblyReference.cache
+C:\Users\stefan.kastory\Documents\Visual Studio 2010\Projects\OpenNETCF.ORM\Tests\OpenNETCF.ORM.Test\bin\Debug\dictionary.txt
+C:\Users\stefan.kastory\Documents\Visual Studio 2010\Projects\OpenNETCF.ORM\Tests\OpenNETCF.ORM.Test\bin\Debug\OpenNETCF.ORM.Test.exe
+C:\Users\stefan.kastory\Documents\Visual Studio 2010\Projects\OpenNETCF.ORM\Tests\OpenNETCF.ORM.Test\bin\Debug\OpenNETCF.ORM.Test.pdb
+C:\Users\stefan.kastory\Documents\Visual Studio 2010\Projects\OpenNETCF.ORM\Tests\OpenNETCF.ORM.Test\bin\Debug\OpenNETCF.ORM.dll
+C:\Users\stefan.kastory\Documents\Visual Studio 2010\Projects\OpenNETCF.ORM\Tests\OpenNETCF.ORM.Test\bin\Debug\OpenNETCF.ORM.SqlCe.dll
+C:\Users\stefan.kastory\Documents\Visual Studio 2010\Projects\OpenNETCF.ORM\Tests\OpenNETCF.ORM.Test\bin\Debug\OpenNETCF.ORM.Xml.dll
+C:\Users\stefan.kastory\Documents\Visual Studio 2010\Projects\OpenNETCF.ORM\Tests\OpenNETCF.ORM.Test\bin\Debug\System.Data.SqlServerCe.dll
+C:\Users\stefan.kastory\Documents\Visual Studio 2010\Projects\OpenNETCF.ORM\Tests\OpenNETCF.ORM.Test\bin\Debug\OpenNETCF.ORM.SqlCe.pdb
+C:\Users\stefan.kastory\Documents\Visual Studio 2010\Projects\OpenNETCF.ORM\Tests\OpenNETCF.ORM.Test\bin\Debug\OpenNETCF.ORM.Xml.pdb
+C:\Users\stefan.kastory\Documents\Visual Studio 2010\Projects\OpenNETCF.ORM\Tests\OpenNETCF.ORM.Test\bin\Debug\OpenNETCF.ORM.pdb
+C:\Users\stefan.kastory\Documents\Visual Studio 2010\Projects\OpenNETCF.ORM\Tests\OpenNETCF.ORM.Test\obj\Debug\OpenNETCF.ORM.Test.exe
+C:\Users\stefan.kastory\Documents\Visual Studio 2010\Projects\OpenNETCF.ORM\Tests\OpenNETCF.ORM.Test\obj\Debug\OpenNETCF.ORM.Test.pdb

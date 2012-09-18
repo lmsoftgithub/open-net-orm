@@ -1,0 +1,14 @@
+C:\SourceSafe\BURSC\Zetes\OpenNETCF.ORM\OpenNETCF.ORM.MSSQL\bin\Debug\OpenNETCF.ORM.MSSQL.dll
+C:\SourceSafe\BURSC\Zetes\OpenNETCF.ORM\OpenNETCF.ORM.MSSQL\bin\Debug\OpenNETCF.ORM.MSSQL.pdb
+C:\SourceSafe\BURSC\Zetes\OpenNETCF.ORM\OpenNETCF.ORM.MSSQL\bin\Debug\OpenNETCF.ORM.dll
+C:\SourceSafe\BURSC\Zetes\OpenNETCF.ORM\OpenNETCF.ORM.MSSQL\bin\Debug\OpenNETCF.ORM.pdb
+C:\SourceSafe\BURSC\Zetes\OpenNETCF.ORM\OpenNETCF.ORM.MSSQL\obj\Debug\ResolveAssemblyReference.cache
+C:\SourceSafe\BURSC\Zetes\OpenNETCF.ORM\OpenNETCF.ORM.MSSQL\obj\Debug\OpenNETCF.ORM.MSSQL.dll
+C:\SourceSafe\BURSC\Zetes\OpenNETCF.ORM\OpenNETCF.ORM.MSSQL\obj\Debug\OpenNETCF.ORM.MSSQL.pdb
+C:\SVN\Zetes\Optidis\Trunk\Sources\OpenNETCF.ORM\OpenNETCF.ORM.MSSQL\bin\Debug\OpenNETCF.ORM.MSSQL.dll
+C:\SVN\Zetes\Optidis\Trunk\Sources\OpenNETCF.ORM\OpenNETCF.ORM.MSSQL\bin\Debug\OpenNETCF.ORM.MSSQL.pdb
+C:\SVN\Zetes\Optidis\Trunk\Sources\OpenNETCF.ORM\OpenNETCF.ORM.MSSQL\bin\Debug\OpenNETCF.ORM.dll
+C:\SVN\Zetes\Optidis\Trunk\Sources\OpenNETCF.ORM\OpenNETCF.ORM.MSSQL\bin\Debug\OpenNETCF.ORM.pdb
+C:\SVN\Zetes\Optidis\Trunk\Sources\OpenNETCF.ORM\OpenNETCF.ORM.MSSQL\obj\Debug\ResolveAssemblyReference.cache
+C:\SVN\Zetes\Optidis\Trunk\Sources\OpenNETCF.ORM\OpenNETCF.ORM.MSSQL\obj\Debug\OpenNETCF.ORM.MSSQL.dll
+C:\SVN\Zetes\Optidis\Trunk\Sources\OpenNETCF.ORM\OpenNETCF.ORM.MSSQL\obj\Debug\OpenNETCF.ORM.MSSQL.pdb
