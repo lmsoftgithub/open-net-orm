@@ -1,8 +1,0 @@
-C:\Users\stefan.kastory\Documents\Visual Studio 2010\Projects\OpenNETCF.ORM\OpenNETCF.ORM.EffiProz\bin\Debug\OpenNETCF.ORM.EffiProz.dll
-C:\Users\stefan.kastory\Documents\Visual Studio 2010\Projects\OpenNETCF.ORM\OpenNETCF.ORM.EffiProz\bin\Debug\OpenNETCF.ORM.EffiProz.pdb
-C:\Users\stefan.kastory\Documents\Visual Studio 2010\Projects\OpenNETCF.ORM\OpenNETCF.ORM.EffiProz\bin\Debug\EffiProz.CF.dll
-C:\Users\stefan.kastory\Documents\Visual Studio 2010\Projects\OpenNETCF.ORM\OpenNETCF.ORM.EffiProz\bin\Debug\OpenNETCF.ORM.dll
-C:\Users\stefan.kastory\Documents\Visual Studio 2010\Projects\OpenNETCF.ORM\OpenNETCF.ORM.EffiProz\bin\Debug\OpenNETCF.ORM.pdb
-C:\Users\stefan.kastory\Documents\Visual Studio 2010\Projects\OpenNETCF.ORM\OpenNETCF.ORM.EffiProz\obj\Debug\ResolveAssemblyReference.cache
-C:\Users\stefan.kastory\Documents\Visual Studio 2010\Projects\OpenNETCF.ORM\OpenNETCF.ORM.EffiProz\obj\Debug\OpenNETCF.ORM.EffiProz.dll
-C:\Users\stefan.kastory\Documents\Visual Studio 2010\Projects\OpenNETCF.ORM\OpenNETCF.ORM.EffiProz\obj\Debug\OpenNETCF.ORM.EffiProz.pdb
