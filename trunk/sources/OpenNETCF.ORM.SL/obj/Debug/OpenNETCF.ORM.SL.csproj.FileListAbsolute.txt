@@ -1,0 +1,10 @@
+C:\SourceSafe\BURSC\Zetes\OpenNETCF.ORM\OpenNETCF.ORM.SL\obj\Debug\ResolveAssemblyReference.cache
+C:\SourceSafe\BURSC\Zetes\OpenNETCF.ORM\OpenNETCF.ORM.SL\Bin\Debug\OpenNETCF.ORM.dll
+C:\SourceSafe\BURSC\Zetes\OpenNETCF.ORM\OpenNETCF.ORM.SL\Bin\Debug\OpenNETCF.ORM.pdb
+C:\SourceSafe\BURSC\Zetes\OpenNETCF.ORM\OpenNETCF.ORM.SL\obj\Debug\OpenNETCF.ORM.dll
+C:\SourceSafe\BURSC\Zetes\OpenNETCF.ORM\OpenNETCF.ORM.SL\obj\Debug\OpenNETCF.ORM.pdb
+C:\SVN\Zetes\Optidis\Trunk\Sources\OpenNETCF.ORM\OpenNETCF.ORM.SL\Bin\Debug\OpenNETCF.ORM.dll
+C:\SVN\Zetes\Optidis\Trunk\Sources\OpenNETCF.ORM\OpenNETCF.ORM.SL\Bin\Debug\OpenNETCF.ORM.pdb
+C:\SVN\Zetes\Optidis\Trunk\Sources\OpenNETCF.ORM\OpenNETCF.ORM.SL\obj\Debug\ResolveAssemblyReference.cache
+C:\SVN\Zetes\Optidis\Trunk\Sources\OpenNETCF.ORM\OpenNETCF.ORM.SL\obj\Debug\OpenNETCF.ORM.dll
+C:\SVN\Zetes\Optidis\Trunk\Sources\OpenNETCF.ORM\OpenNETCF.ORM.SL\obj\Debug\OpenNETCF.ORM.pdb

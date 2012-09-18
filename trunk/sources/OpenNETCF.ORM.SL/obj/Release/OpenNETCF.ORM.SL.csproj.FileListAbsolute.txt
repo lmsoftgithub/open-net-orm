@@ -1,0 +1,5 @@
+C:\SVN\Zetes\Optidis\Trunk\Sources\OpenNETCF.ORM\OpenNETCF.ORM.SL\Bin\Release\OpenNETCF.ORM.dll
+C:\SVN\Zetes\Optidis\Trunk\Sources\OpenNETCF.ORM\OpenNETCF.ORM.SL\Bin\Release\OpenNETCF.ORM.pdb
+C:\SVN\Zetes\Optidis\Trunk\Sources\OpenNETCF.ORM\OpenNETCF.ORM.SL\obj\Release\ResolveAssemblyReference.cache
+C:\SVN\Zetes\Optidis\Trunk\Sources\OpenNETCF.ORM\OpenNETCF.ORM.SL\obj\Release\OpenNETCF.ORM.dll
+C:\SVN\Zetes\Optidis\Trunk\Sources\OpenNETCF.ORM\OpenNETCF.ORM.SL\obj\Release\OpenNETCF.ORM.pdb

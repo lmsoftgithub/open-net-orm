@@ -1,0 +1,7 @@
+C:\Users\stefan.kastory\Documents\Visual Studio 2010\Projects\OpenNETCF.ORM\OpenNETCF.ORM.Xml\bin\Debug\OpenNETCF.ORM.Xml.dll
+C:\Users\stefan.kastory\Documents\Visual Studio 2010\Projects\OpenNETCF.ORM\OpenNETCF.ORM.Xml\bin\Debug\OpenNETCF.ORM.Xml.pdb
+C:\Users\stefan.kastory\Documents\Visual Studio 2010\Projects\OpenNETCF.ORM\OpenNETCF.ORM.Xml\bin\Debug\OpenNETCF.ORM.dll
+C:\Users\stefan.kastory\Documents\Visual Studio 2010\Projects\OpenNETCF.ORM\OpenNETCF.ORM.Xml\bin\Debug\OpenNETCF.ORM.pdb
+C:\Users\stefan.kastory\Documents\Visual Studio 2010\Projects\OpenNETCF.ORM\OpenNETCF.ORM.Xml\obj\Debug\ResolveAssemblyReference.cache
+C:\Users\stefan.kastory\Documents\Visual Studio 2010\Projects\OpenNETCF.ORM\OpenNETCF.ORM.Xml\obj\Debug\OpenNETCF.ORM.Xml.dll
+C:\Users\stefan.kastory\Documents\Visual Studio 2010\Projects\OpenNETCF.ORM\OpenNETCF.ORM.Xml\obj\Debug\OpenNETCF.ORM.Xml.pdb
