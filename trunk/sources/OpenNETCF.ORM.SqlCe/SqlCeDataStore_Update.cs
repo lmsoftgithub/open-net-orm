@@ -10,11 +10,7 @@ namespace OpenNETCF.ORM
 {
     partial class SqlCeDataStore
     {
-        public override void Update(object item, bool cascadeUpdates, string fieldName, bool transactional)
-        {
-            Update(item, cascadeUpdates, fieldName);
-        }
-        public override void Update(object item, bool cascadeUpdates, string fieldName)
+        protected override void Update(object item, bool cascadeUpdates, string fieldName, IDbTransaction transaction)
         {
             object keyValue;
             var itemType = item.GetType();
@@ -30,7 +26,9 @@ namespace OpenNETCF.ORM
                 throw new PrimaryKeyRequiredException("A primary key is required on an Entity in order to perform Updates");
             }
 
-            var connection = GetConnection(false);
+            IDbConnection connection = null;
+            if (transaction == null)
+                connection = GetConnection(false);
             try
             {
                 CheckOrdinals(entityName);
@@ -38,7 +36,10 @@ namespace OpenNETCF.ORM
 
                 using (var command = new SqlCeCommand())
                 {
-                    command.Connection = connection as SqlCeConnection;
+                    if (transaction == null)
+                        command.Connection = connection as SqlCeConnection;
+                    else
+                        command.Transaction = transaction as SqlCeTransaction;
                     command.CommandText = entityName;
                     command.CommandType = CommandType.TableDirect;
                     command.IndexName = Entities[entityName].PrimaryKeyIndexName;
@@ -134,21 +135,16 @@ namespace OpenNETCF.ORM
                             {
                                 var foreignKey = refItem.GetType().GetProperty(reference.ReferenceField, BindingFlags.Instance | BindingFlags.Public);
                                 foreignKey.SetValue(refItem, keyValue, null);
-                                Insert(refItem, false);
+                                Insert(refItem, true, transaction, true);
                             }
                             else
                             {
-                                Update(refItem, true, fieldName);
+                                Update(refItem, true, fieldName, transaction);
                             }
                         }
                     }
                 }
             }
-        }
-
-        protected override void Update(object item, bool cascadeUpdates, string fieldName, IDbTransaction transaction)
-        {
-            throw new NotImplementedException();
         }
     }
 }

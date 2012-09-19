@@ -198,7 +198,7 @@ namespace EntityGenerator.Services
             catch (IOException ex)
             {
                 // TODO: handle this
-                throw;
+                throw ex;
             }
 
         }

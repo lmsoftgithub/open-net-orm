@@ -26,6 +26,7 @@ namespace OpenNETCF.ORM
         public ConnectionBehavior ConnectionBehavior { get; set; }
 
         public abstract override void CreateStore();
+        public abstract override void CreateOrUpdateStore();
         public abstract override void DeleteStore();
         public abstract override void EnsureCompatibility();
 
@@ -33,19 +34,162 @@ namespace OpenNETCF.ORM
 
         protected abstract string GetPrimaryKeyIndexName(string entityName);
 
-        public abstract override void InsertOrUpdate(object item, bool insertReferences);
-        public abstract override void InsertOrUpdate(object item, bool insertReferences, bool transactional);
-        protected abstract void InsertOrUpdate(object item, bool insertReferences, IDbTransaction transaction);
+        public virtual void InsertOrUpdate(object item)
+        {
+            InsertOrUpdate(item, false);
+        }
+        public override void InsertOrUpdate(object item, bool insertReferences)
+        {
+            InsertOrUpdate(item, insertReferences, false);
+        }
+        public override void InsertOrUpdate(object item, bool insertReferences, bool transactional)
+        {
+            IDbTransaction transaction = null;
+            if (transactional)
+            {
+                transaction = GetTransaction(false);
+            }
+            try
+            {
+                InsertOrUpdate(item, insertReferences, transaction);
+                if (transaction != null) transaction.Commit();
+            }
+            catch
+            {
+                if (transaction != null) transaction.Rollback();
+                throw;
+            }
+            finally
+            {
+                DoneWithTransaction(transaction, false);
+            }
+        }
+        protected virtual void InsertOrUpdate(object item, bool insertReferences, IDbTransaction transaction)
+        {
+            if (this.Contains(item))
+            {
+                Update(item, insertReferences, null, transaction);
+            }
+            else
+            {
+                Insert(item, insertReferences, transaction, true);
+            }
+        }
 
-        public abstract override void Insert(object item, bool insertReferences);
-        public abstract override void Insert(object item, bool insertReferences, bool transactional);
-        protected abstract void Insert(object item, bool insertReferences, IDbTransaction transaction);
+        public override void Insert(object item, bool insertReferences)
+        {
+            Insert(item, insertReferences, false);
+        }
+        public override void Insert(object item, bool insertReferences, bool transactional)
+        {
+            //IDbConnection connection = null;
+            IDbTransaction transaction = null;
+            if (transactional)
+            {
+                transaction = GetTransaction(false);
+            }
+            try
+            {
+                Insert(item, insertReferences, transaction, false);
+                if (transaction != null) transaction.Commit();
+            }
+            catch
+            {
+                if (transaction != null) transaction.Rollback();
+                throw;
+            }
+            finally
+            {
+                DoneWithTransaction(transaction, false);
+            }
+        }
+        protected abstract void Insert(object item, bool insertReferences, IDbTransaction transaction, bool checkUpdate);
 
         protected abstract object[] Select(Type objectType, IEnumerable<FilterCondition> filters, int fetchCount, int firstRowOffset, bool fillReferences, bool filterReferences);
 
-        public abstract override void Update(object item, bool cascadeUpdates, string fieldName);
-        public abstract override void Update(object item, bool cascadeUpdates, string fieldName, bool transactional);
+        public override void Update(object item, bool cascadeUpdates, string fieldName)
+        {
+            Update(item, cascadeUpdates, fieldName, false);
+        }
+        public override void Update(object item, bool cascadeUpdates, string fieldName, bool transactional)
+        {
+            IDbTransaction transaction = null;
+            if (transactional)
+            {
+                transaction = GetTransaction(false);
+            }
+            try
+            {
+                Update(item, cascadeUpdates, fieldName, transaction);
+                if (transaction != null) transaction.Commit();
+            }
+            catch
+            {
+                if (transaction != null) transaction.Rollback();
+                throw;
+            }
+            finally
+            {
+                DoneWithTransaction(transaction, false);
+            }
+        }
         protected abstract void Update(object item, bool cascadeUpdates, string fieldName, IDbTransaction transaction);
+
+        public override void BulkInsert(object items, bool insertReferences)
+        {
+            BulkInsert(items, insertReferences, false);
+        }
+        public override void BulkInsert(object items, bool insertReferences, bool transactional)
+        {
+            IDbTransaction transaction = null;
+            if (transactional)
+            {
+                transaction = GetTransaction(false);
+            }
+            try
+            {
+                BulkInsert(items, insertReferences, transaction);
+                if (transaction != null) transaction.Commit();
+            }
+            catch
+            {
+                if (transaction != null) transaction.Rollback();
+                throw;
+            }
+            finally
+            {
+                DoneWithTransaction(transaction, false);
+            }
+        }
+        protected abstract void BulkInsert(object items, bool insertReferences, IDbTransaction transaction);
+
+        public override void BulkInsertOrUpdate(object items, bool insertReferences)
+        {
+            BulkInsertOrUpdate(items, insertReferences, false);
+        }
+        public override void BulkInsertOrUpdate(object items, bool insertReferences, bool transactional)
+        {
+            IDbTransaction transaction = null;
+            if (transactional)
+            {
+                transaction = GetTransaction(false);
+            }
+            try
+            {
+                BulkInsertOrUpdate(items, insertReferences, transaction);
+                if (transaction != null) transaction.Commit();
+            }
+            catch
+            {
+                if (transaction != null) transaction.Rollback();
+                throw;
+            }
+            finally
+            {
+                DoneWithTransaction(transaction, false);
+            }
+        }
+        protected abstract void BulkInsertOrUpdate(object items, bool insertReferences, IDbTransaction transaction);
 
         public override T[] Fetch<T>(int fetchCount, int firstRowOffset, string sortField, FieldSearchOrder sortOrder, FilterCondition filter, bool fillReferences)
         {
@@ -349,31 +493,24 @@ namespace OpenNETCF.ORM
                 StringBuilder sql = new StringBuilder();
                 StringBuilder keys = new StringBuilder();
                 sql.AppendFormat("CREATE TABLE {0} ( ", entity.EntityName);
-                int count = entity.Fields.KeyFields.Count;
+                int count = entity.Fields.Count;
+                int keycount = entity.Fields.KeyFields.Count;
                 if (count > 0)
                 {
-                    foreach (var field in entity.Fields.KeyFields)
+                    foreach (var field in entity.Fields)
                     {
                         sql.AppendFormat(" {0} {1} {2} ",
                             field.FieldName,
                             GetFieldDataTypeString(entity.EntityName, field),
                             GetFieldCreationAttributes(entity.EntityAttribute, field, true));
-                        keys.Append(field.FieldName);
-                        if (--count > 0)
+                        if (field.IsPrimaryKey)
                         {
-                            sql.Append(", ");
-                            keys.Append(", ");
+                            keys.Append(field.FieldName);
+                            if (--keycount > 0) keys.Append(", ");
                         }
+                        if (--count > 0) sql.Append(", ");
                     }
                     sql.AppendFormat(", PRIMARY KEY({0}) )", keys.ToString());
-                }
-                else
-                {
-                    var field = entity.Fields.First();
-                    sql.AppendFormat(" {0} {1} {2} )",
-                            field.FieldName,
-                            GetFieldDataTypeString(entity.EntityName, field),
-                            GetFieldCreationAttributes(entity.EntityAttribute, field, true));
                 }
                 using (var command = GetNewCommandObject())
                 {
@@ -383,63 +520,57 @@ namespace OpenNETCF.ORM
                 }
                 bTableExists = true;
             }
-
-            foreach (var field in entity.Fields)
+            else
             {
-                StringBuilder sql = new StringBuilder();
-                if (!FieldExists(connection, entity, field))
+                foreach (var field in entity.Fields)
                 {
-                    if (ReservedWords.Contains(field.FieldName, StringComparer.InvariantCultureIgnoreCase))
+                    StringBuilder sql = new StringBuilder();
+                    if (!FieldExists(connection, entity, field))
                     {
-                        throw new ReservedWordException(field.FieldName);
-                    }
-                    if (bTableExists)
-                    {
+                        if (ReservedWords.Contains(field.FieldName, StringComparer.InvariantCultureIgnoreCase))
+                        {
+                            throw new ReservedWordException(field.FieldName);
+                        }
                         sql.AppendFormat("ALTER TABLE {0} ADD ", entity.EntityName);
+                        // ALTER TABLE {TABLENAME} 
+                        // ADD {COLUMNNAME} {TYPE} {NULL|NOT NULL} 
+                        // CONSTRAINT {CONSTRAINT_NAME} DEFAULT {DEFAULT_VALUE}
+                        sql.AppendFormat(" {0} {1} {2} ",
+                            field.FieldName,
+                            GetFieldDataTypeString(entity.EntityName, field),
+                            GetFieldCreationAttributes(entity.EntityAttribute, field, bMultiplePrimaryKeys));
+                        using (var command = GetNewCommandObject())
+                        {
+                            command.CommandText = sql.ToString();
+                            command.Connection = connection;
+                            int i = command.ExecuteNonQuery();
+                        }
+                        // create indexes
+                        if (field.SearchOrder != FieldSearchOrder.NotSearchable)
+                        {
+                            VerifyIndex(entity.EntityName, field.FieldName, field.SearchOrder, connection);
+                        }
                     }
                     else
                     {
-                        sql.AppendFormat("CREATE TABLE {0} ( ", entity.EntityName);
-                    }
-                    // ALTER TABLE {TABLENAME} 
-                    // ADD {COLUMNNAME} {TYPE} {NULL|NOT NULL} 
-                    // CONSTRAINT {CONSTRAINT_NAME} DEFAULT {DEFAULT_VALUE}
-                    sql.AppendFormat(" {0} {1} {2} ",
-                        field.FieldName,
-                        GetFieldDataTypeString(entity.EntityName, field),
-                        GetFieldCreationAttributes(entity.EntityAttribute, field, bMultiplePrimaryKeys));
-
-                    if (bTableExists)
-                    {
-                    }
-                    else
-                    {
-                        sql.AppendFormat(") ");
-                    }
-
-                    using (var command = GetNewCommandObject())
-                    {
-                        command.CommandText = sql.ToString();
-                        command.Connection = connection;
-                        int i = command.ExecuteNonQuery();
-                    }
-                    bTableExists = true;
-
-                    // create indexes
-                    if (field.SearchOrder != FieldSearchOrder.NotSearchable)
-                    {
-                        VerifyIndex(entity.EntityName, field.FieldName, field.SearchOrder, connection);
-                    }
-                }
-                else
-                {
-                    // create indexes
-                    if (field.SearchOrder != FieldSearchOrder.NotSearchable)
-                    {
-                        VerifyIndex(entity.EntityName, field.FieldName, field.SearchOrder, connection);
+                        // create indexes
+                        if (field.SearchOrder != FieldSearchOrder.NotSearchable)
+                        {
+                            VerifyIndex(entity.EntityName, field.FieldName, field.SearchOrder, connection);
+                        }
                     }
                 }
             }
+        }
+
+        protected virtual void DropAndCreateTable(IDbConnection connection, EntityInfo entity)
+        {
+            Boolean bTableExists = TableExists(connection, entity);
+            if (bTableExists)
+            {
+                Drop(connection, entity);
+            }
+            CreateTable(connection, entity);
         }
 
         protected virtual Boolean FieldExists(IDbConnection connection, EntityInfo entity, FieldAttribute field)
@@ -1324,20 +1455,26 @@ namespace OpenNETCF.ORM
             }
 
             // TODO: handle cascade deletes?
+            EntityInfo entity = m_entities[entityName];
 
             var connection = GetConnection(true);
             try
             {
-                using (var command = GetNewCommandObject())
-                {
-                    command.Connection = connection;
-                    command.CommandText = string.Format("DROP TABLE {0}", entityName);
-                    command.ExecuteNonQuery();
-                }
+                Drop(connection, entity);
             }
             finally
             {
                 DoneWithConnection(connection, true);
+            }
+        }
+
+        private void Drop(IDbConnection connection, EntityInfo entity)
+        {
+            using (var command = GetNewCommandObject())
+            {
+                command.Connection = connection;
+                command.CommandText = string.Format("DROP TABLE {0}", entity.EntityName);
+                command.ExecuteNonQuery();
             }
         }
 

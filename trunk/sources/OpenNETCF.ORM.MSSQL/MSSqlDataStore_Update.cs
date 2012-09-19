@@ -10,32 +10,6 @@ namespace OpenNETCF.ORM
 {
     partial class MSSqlDataStore
     {
-        public override void Update(object item, bool cascadeUpdates, string fieldName, bool transactional)
-        {
-            IDbTransaction transaction = null;
-            if (transactional)
-            {
-                transaction = GetTransaction(false);
-            }
-            try
-            {
-                Update(item, cascadeUpdates, fieldName, transaction);
-                if (transaction != null) transaction.Commit();
-            }
-            catch
-            {
-                if (transaction != null) transaction.Rollback();
-                throw;
-            }
-            finally
-            {
-                DoneWithTransaction(transaction, false);
-            }
-        }
-        public override void Update(object item, bool cascadeUpdates, string fieldName)
-        {
-            Update(item, cascadeUpdates, fieldName, false);
-        }
 
         protected override void Update(object item, bool cascadeUpdates, string fieldName, IDbTransaction transaction)
         {
@@ -111,6 +85,7 @@ namespace OpenNETCF.ORM
 
                         using (var insertCommand = GetNewCommandObject())
                         {
+                            keyValue = Entities[entityName].Fields.KeyField.PropertyInfo.GetValue(item, null);
                             // update the values
                             foreach (var field in Entities[entityName].Fields)
                             {
@@ -232,15 +207,14 @@ namespace OpenNETCF.ORM
                         foreach (var refItem in itemList)
                         {
                             var foreignKey = refItem.GetType().GetProperty(reference.ReferenceField, BindingFlags.Instance | BindingFlags.Public);
-                            keyValue = Entities[entityName].Fields.KeyField.PropertyInfo.GetValue(item, null);
                             foreignKey.SetValue(refItem, keyValue, null);
                             if (!this.Contains(refItem))
                             {
-                                Insert(refItem, false, transaction);
+                                Insert(refItem, cascadeUpdates, transaction, true);
                             }
                             else
                             {
-                                Update(refItem, true, fieldName, transaction);
+                                Update(refItem, cascadeUpdates, fieldName, transaction);
                             }
                         }
                     }

@@ -20,3 +20,14 @@ C:\SVN\Zetes\Optidis\Trunk\Sources\OpenNETCF.ORM\Tests\OpenNETCF.ORM.SQLite.Inte
 C:\SVN\Zetes\Optidis\Trunk\Sources\OpenNETCF.ORM\Tests\OpenNETCF.ORM.SQLite.Integration.Test\bin\Debug\OpenNETCF.ORM.SQLite.FFx.pdb
 C:\SVN\Zetes\Optidis\Trunk\Sources\OpenNETCF.ORM\Tests\OpenNETCF.ORM.SQLite.Integration.Test\bin\Debug\OpenNETCF.ORM.pdb
 C:\SVN\Zetes\Optidis\Trunk\Sources\OpenNETCF.ORM\Tests\OpenNETCF.ORM.SQLite.Integration.Test\obj\Debug\OpenNETCF.ORM.SQLite.Integration.Test.dll
+C:\Users\stefan.kastory\Documents\GoogleCode\open-net-orm\trunk\sources\Tests\OpenNETCF.ORM.SQLite.Integration.Test\obj\Debug\ResolveAssemblyReference.cache
+C:\Users\stefan.kastory\Documents\GoogleCode\open-net-orm\trunk\sources\Tests\OpenNETCF.ORM.SQLite.Integration.Test\obj\Debug\OpenNETCF.ORM.SQLite.Integration.Test.pdb
+C:\Users\stefan.kastory\Documents\GoogleCode\open-net-orm\trunk\sources\Tests\OpenNETCF.ORM.SQLite.Integration.Test\bin\Debug\SQLite.Interop.dll
+C:\Users\stefan.kastory\Documents\GoogleCode\open-net-orm\trunk\sources\Tests\OpenNETCF.ORM.SQLite.Integration.Test\bin\Debug\OpenNETCF.ORM.SQLite.Integration.Test.dll
+C:\Users\stefan.kastory\Documents\GoogleCode\open-net-orm\trunk\sources\Tests\OpenNETCF.ORM.SQLite.Integration.Test\bin\Debug\OpenNETCF.ORM.SQLite.Integration.Test.pdb
+C:\Users\stefan.kastory\Documents\GoogleCode\open-net-orm\trunk\sources\Tests\OpenNETCF.ORM.SQLite.Integration.Test\bin\Debug\OpenNETCF.ORM.dll
+C:\Users\stefan.kastory\Documents\GoogleCode\open-net-orm\trunk\sources\Tests\OpenNETCF.ORM.SQLite.Integration.Test\bin\Debug\OpenNETCF.ORM.SQLite.FFx.dll
+C:\Users\stefan.kastory\Documents\GoogleCode\open-net-orm\trunk\sources\Tests\OpenNETCF.ORM.SQLite.Integration.Test\bin\Debug\System.Data.SQLite.dll
+C:\Users\stefan.kastory\Documents\GoogleCode\open-net-orm\trunk\sources\Tests\OpenNETCF.ORM.SQLite.Integration.Test\bin\Debug\OpenNETCF.ORM.SQLite.FFx.pdb
+C:\Users\stefan.kastory\Documents\GoogleCode\open-net-orm\trunk\sources\Tests\OpenNETCF.ORM.SQLite.Integration.Test\bin\Debug\OpenNETCF.ORM.pdb
+C:\Users\stefan.kastory\Documents\GoogleCode\open-net-orm\trunk\sources\Tests\OpenNETCF.ORM.SQLite.Integration.Test\obj\Debug\OpenNETCF.ORM.SQLite.Integration.Test.dll
