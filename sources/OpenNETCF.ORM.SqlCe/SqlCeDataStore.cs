@@ -71,14 +71,19 @@ namespace OpenNETCF.ORM
             CreateStore(false);
         }
 
+        public override void CreateOrUpdateStore()
+        {
+            CreateStore(true);
+        }
+
         /// <summary>
         /// Creates the underlying DataStore
         /// </summary>
-        public void CreateStore(Boolean ForceTableCreation)
+        protected void CreateStore(Boolean UpdateStore)
         {
             if (StoreExists)
             {
-                if (!ForceTableCreation) throw new StoreAlreadyExistsException();
+                if (!UpdateStore) throw new StoreAlreadyExistsException();
             }
             else
             {
@@ -156,105 +161,13 @@ namespace OpenNETCF.ORM
         }
 
         /// <summary>
-        /// Check whether the object already exists and should be updated or the object doesn't exist and should be added.
-        /// </summary>
-        /// <param name="item"></param>
-        public void InsertOrUpdate(object item)
-        {
-            InsertOrUpdate(item, false);
-        }
-
-        public override void InsertOrUpdate(object item, bool insertReferences, bool transactional)
-        {
-            InsertOrUpdate(item, insertReferences);
-        }
-
-        /// <summary>
-        /// Check whether the object already exists and should be updated or the object doesn't exist and should be added.
-        /// </summary>
-        /// <param name="item"></param>
-        /// <param name="insertReferences"></param>
-        public override void InsertOrUpdate(object item, bool insertReferences)
-        {
-            // Commented - 2012.08.08 - Using the generic "Contains" method.
-            //var itemType = item.GetType();
-            //string entityName = m_entities.GetNameForType(itemType);
-
-            //if (entityName == null)
-            //{
-            //    throw new EntityNotFoundException(item.GetType());
-            //}
-
-            //Boolean exists = false;
-            //var connection = GetConnection(false);
-            //try
-            //{
-            //    CheckOrdinals(entityName);
-            //    CheckPrimaryKeyIndex(entityName);
-            //    object keyValue = System.DBNull.Value;
-            //    using (var command = GetNewCommandObject())
-            //    {
-            //        command.Connection = connection;
-            //        StringBuilder sql = new StringBuilder();
-            //        StringBuilder where = new StringBuilder(" WHERE ");
-
-            //        sql.Append("SELECT ");
-            //        int count = Entities[entityName].Fields.KeyFields.Count;
-            //        foreach (FieldAttribute field in Entities[entityName].Fields.KeyFields)
-            //        {
-            //            sql.Append(field.FieldName);
-            //            where.AppendFormat(" [{0}] = @{0} ", field.FieldName);
-            //            keyValue = field.PropertyInfo.GetValue(item, null);
-            //            command.Parameters.Add(new SqlCeParameter(String.Format("@{0}", field.FieldName), keyValue));
-            //            if (--count > 0)
-            //            {
-            //                sql.Append(", ");
-            //                where.Append(" AND ");
-            //            }
-            //        }
-            //        sql.AppendFormat(" FROM {0} {1}", entityName, where.ToString());
-
-            //        command.CommandText = sql.ToString();
-            //        command.CommandType = CommandType.Text;
-            //        using (var reader = command.ExecuteReader() as SqlCeDataReader)
-            //        {
-            //            exists = reader.Read();
-            //        }
-            //    }
-            //}
-            //finally
-            //{
-            //    DoneWithConnection(connection, false);
-            //}
-
-            if (this.Contains(item))
-            {
-                Update(item, insertReferences, null);
-            }
-            else
-            {
-                Insert(item, insertReferences);
-            }
-        }
-
-        protected override void InsertOrUpdate(object item, bool insertReferences, IDbTransaction transaction)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override void Insert(object item, bool insertReferences, bool transactional)
-        {
-            Insert(item, insertReferences);
-        }
-
-        /// <summary>
         /// Inserts the provided entity instance into the underlying data store.
         /// </summary>
         /// <param name="item"></param>
         /// <remarks>
         /// If the entity has an identity field, calling Insert will populate that field with the identity vale vefore returning
         /// </remarks>
-        public override void Insert(object item, bool insertReferences)
+        protected override void Insert(object item, bool insertReferences, IDbTransaction transaction, bool checkUpdates)
         {
             var itemType = item.GetType();
             string entityName = m_entities.GetNameForType(itemType);
@@ -263,30 +176,37 @@ namespace OpenNETCF.ORM
             {
                 throw new EntityNotFoundException(item.GetType());
             }
+            EntityInfo entity = m_entities[entityName];
 
             // we'll use table direct for inserts - no point in getting the query parser involved in this
-            var connection = GetConnection(false);
+            IDbConnection connection = null;
+            if (transaction == null)
+                connection = GetConnection(false);
+            else
+                connection = transaction.Connection;
             try
             {
                 CheckOrdinals(entityName);
 
                 FieldAttribute identity = null;
-
                 using (var command = new SqlCeCommand())
                 {
-                    command.Connection = connection as SqlCeConnection;
-                    command.CommandText = entityName;
+                    if (transaction == null)
+                        command.Connection = connection as SqlCeConnection;
+                    else
+                        command.Transaction = transaction as SqlCeTransaction;
+                    command.CommandText = entity.EntityName;
                     command.CommandType = CommandType.TableDirect;
 
                     using (var results = command.ExecuteResultSet(ResultSetOptions.Updatable))
                     {
                         var record = results.CreateRecord();
 
-                        var keyScheme = Entities[entityName].EntityAttribute.KeyScheme;
+                        var keyScheme = Entities[entity.EntityName].EntityAttribute.KeyScheme;
 
-                        foreach (var field in Entities[entityName].Fields)
+                        foreach (var field in Entities[entity.EntityName].Fields)
                         {
-                            if((keyScheme == KeyScheme.Identity) && field.IsPrimaryKey)
+                            if ((keyScheme == KeyScheme.Identity) && field.IsPrimaryKey)
                             {
                                 identity = field;
                             }
@@ -299,7 +219,7 @@ namespace OpenNETCF.ORM
                                 {
                                     throw new MissingMethodException(
                                         string.Format("The field '{0}' requires a custom serializer/deserializer method pair in the '{1}' Entity",
-                                        field.FieldName, entityName));
+                                        field.FieldName, entity.EntityName));
                                 }
                                 var value = serializer.Invoke(item, new object[] { field.FieldName });
                                 if (value == null)
@@ -342,7 +262,16 @@ namespace OpenNETCF.ORM
                         // did we have an identity field?  If so, we need to update that value in the item
                         if (identity != null)
                         {
-                            var id = GetIdentity(connection);
+                            int id = 0;
+                            if (transaction == null)
+                            {
+                                id = GetIdentity(connection);
+                            }
+                            else
+                            {
+                                id = GetIdentity(transaction);
+                            }
+                            identity.PropertyInfo.SetValue(item, id, null);
                             identity.PropertyInfo.SetValue(item, id, null);
                         }
 
@@ -350,14 +279,14 @@ namespace OpenNETCF.ORM
                         {
                             // cascade insert any References
                             // do this last because we need the PK from above
-                            foreach (var reference in Entities[entityName].References)
+                            foreach (var reference in Entities[entity.EntityName].References)
                             {
                                 var valueArray = reference.PropertyInfo.GetValue(item, null);
                                 if (valueArray == null) continue;
 
                                 // Modified - 2012.08.16 - Corrected an error where the bad keyfield was used.
                                 //var fk = Entities[entityName].Fields[reference.ReferenceField].PropertyInfo.GetValue(item, null);
-                                var fk = Entities[entityName].Fields.KeyField.PropertyInfo.GetValue(item, null);
+                                var fk = Entities[entity.EntityName].Fields.KeyField.PropertyInfo.GetValue(item, null);
 
                                 string et = null;
 
@@ -371,35 +300,14 @@ namespace OpenNETCF.ORM
 
                                     // Added - 2012.08.08 - Replacing the old code to handle existing objects which were added
                                     Entities[et].Fields[reference.ReferenceField].PropertyInfo.SetValue(element, fk, null);
-                                    this.InsertOrUpdate(element, insertReferences);
-
-                                    // Commented - 2012.08.08 - Replaced with a more robust/generic code
-                                    //// get the FK value
-                                    //var keyValue = Entities[et].Fields.KeyField.PropertyInfo.GetValue(element, null);
-                                    //bool isNew = false;
-                                    //// only do an insert if the value is new (i.e. need to look for existing reference items)
-                                    //// not certain how this will work right now, so for now we ask the caller to know what they're doing
-                                    //switch (keyScheme)
-                                    //{
-                                    //    case KeyScheme.Identity:
-                                    //        // TODO: see if PK field value == -1
-                                    //        isNew = keyValue.Equals(-1);
-                                    //        break;
-                                    //    case KeyScheme.GUID:
-                                    //        // TODO: see if PK field value == null
-                                    //        isNew = keyValue.Equals(null);
-                                    //        break;
-                                    //}
-                                    //if (isNew)
-                                    //{
-                                    //    Entities[et].Fields[reference.ReferenceField].PropertyInfo.SetValue(element, fk, null);
-                                    //    Insert(element);
-                                    //}
+                                    if (checkUpdates)
+                                        this.InsertOrUpdate(element, insertReferences, transaction);
+                                    else
+                                        this.Insert(element, insertReferences, transaction, checkUpdates);
                                 }
                             }
                         }
                     }
-
                     command.Dispose();
                 }
             }
@@ -409,12 +317,7 @@ namespace OpenNETCF.ORM
             }
         }
 
-        protected override void Insert(object item, bool insertReferences, IDbTransaction transaction)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void BulkInsert(object items, bool insertReferences)
+        protected override void BulkInsert(object items, bool insertReferences, IDbTransaction transaction)
         {
 
             if (items != null && items.GetType().IsArray && (items as Array).Length > 0)
@@ -429,11 +332,15 @@ namespace OpenNETCF.ORM
                 }
 
                 // we'll use table direct for inserts - no point in getting the query parser involved in this
-                var connection = GetConnection(false);
+                IDbConnection connection = null;
+                if (transaction == null)
+                    connection = GetConnection(false);
+                else
+                    connection = transaction.Connection;
                 try
                 {
                     CheckOrdinals(entityName);
-
+                    
                     FieldAttribute identity = null;
                     using (var command = new SqlCeCommand())
                     {
@@ -537,7 +444,7 @@ namespace OpenNETCF.ORM
                                             // Added - 2012.08.08 - Replacing the old code to handle existing objects which were added
                                             Entities[et].Fields[reference.ReferenceField].PropertyInfo.SetValue(element, fk, null);
                                         }
-                                        this.BulkInsert((object[])valueArray, insertReferences);
+                                        this.BulkInsert((object[])valueArray, insertReferences, transaction);
                                     }
                                 }
                             }
@@ -552,6 +459,11 @@ namespace OpenNETCF.ORM
             }
         }
 
+        protected override void BulkInsertOrUpdate(object item, bool insertReferences, IDbTransaction transaction)
+        {
+            throw new NotImplementedException();
+        }
+
         protected override IDataParameter CreateParameterObject(string parameterName, object parameterValue)
         {
             return new SqlCeParameter(parameterName, parameterValue);
@@ -560,6 +472,15 @@ namespace OpenNETCF.ORM
         private int GetIdentity(IDbConnection connection)
         {
             using (var command = new SqlCeCommand("SELECT @@IDENTITY", connection as SqlCeConnection))
+            {
+                object id = command.ExecuteScalar();
+                return Convert.ToInt32(id);
+            }
+        }
+
+        private int GetIdentity(IDbTransaction transaction)
+        {
+            using (var command = new SqlCeCommand("SELECT SCOPE_IDENTITY()", transaction.Connection as SqlCeConnection, transaction as SqlCeTransaction))
             {
                 object id = command.ExecuteScalar();
                 return Convert.ToInt32(id);

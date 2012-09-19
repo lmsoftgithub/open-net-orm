@@ -14,6 +14,7 @@ namespace OpenNETCF.ORM
 
         // TODO: maybe move these to another object since they're more "admin" related?
         public abstract void CreateStore();
+        public abstract void CreateOrUpdateStore();
         public abstract void DeleteStore();
         public abstract bool StoreExists { get; }
         public abstract void EnsureCompatibility();
@@ -22,6 +23,11 @@ namespace OpenNETCF.ORM
         public abstract void Insert(object item, bool insertReferences, bool transactional);
         public abstract void InsertOrUpdate(object item, bool insertReferences);
         public abstract void Insert(object item, bool insertReferences);
+
+        public abstract void BulkInsertOrUpdate(object items, bool insertReferences, bool transactional);
+        public abstract void BulkInsert(object items, bool insertReferences, bool transactional);
+        public abstract void BulkInsertOrUpdate(object items, bool insertReferences);
+        public abstract void BulkInsert(object items, bool insertReferences);
 
         public abstract T[] Select<T>() where T : new();
         public abstract T[] Select<T>(bool fillReferences) where T : new();

@@ -20,3 +20,14 @@ C:\SVN\Zetes\Optidis\Trunk\Sources\OpenNETCF.ORM\Tests\OpenNETCF.ORM.SqlCE.Integ
 C:\SVN\Zetes\Optidis\Trunk\Sources\OpenNETCF.ORM\Tests\OpenNETCF.ORM.SqlCE.Integration.Test\obj\Debug\ResolveAssemblyReference.cache
 C:\SVN\Zetes\Optidis\Trunk\Sources\OpenNETCF.ORM\Tests\OpenNETCF.ORM.SqlCE.Integration.Test\obj\Debug\OpenNETCF.ORM.SqlCE.Integration.Test.dll
 C:\SVN\Zetes\Optidis\Trunk\Sources\OpenNETCF.ORM\Tests\OpenNETCF.ORM.SqlCE.Integration.Test\obj\Debug\OpenNETCF.ORM.SqlCE.Integration.Test.pdb
+C:\Users\stefan.kastory\Documents\GoogleCode\open-net-orm\trunk\sources\Tests\OpenNETCF.ORM.SqlCE.Integration.Test\bin\Debug\OpenNETCF.ORM.SqlCE.Integration.Test.dll
+C:\Users\stefan.kastory\Documents\GoogleCode\open-net-orm\trunk\sources\Tests\OpenNETCF.ORM.SqlCE.Integration.Test\bin\Debug\OpenNETCF.ORM.SqlCE.Integration.Test.pdb
+C:\Users\stefan.kastory\Documents\GoogleCode\open-net-orm\trunk\sources\Tests\OpenNETCF.ORM.SqlCE.Integration.Test\bin\Debug\OpenNETCF.ORM.dll
+C:\Users\stefan.kastory\Documents\GoogleCode\open-net-orm\trunk\sources\Tests\OpenNETCF.ORM.SqlCE.Integration.Test\bin\Debug\OpenNETCF.ORM.SqlCe.dll
+C:\Users\stefan.kastory\Documents\GoogleCode\open-net-orm\trunk\sources\Tests\OpenNETCF.ORM.SqlCE.Integration.Test\bin\Debug\OpenNETCF.ORM.SqlCe.pdb
+C:\Users\stefan.kastory\Documents\GoogleCode\open-net-orm\trunk\sources\Tests\OpenNETCF.ORM.SqlCE.Integration.Test\bin\Debug\OpenNETCF.ORM.pdb
+C:\Users\stefan.kastory\Documents\GoogleCode\open-net-orm\trunk\sources\Tests\OpenNETCF.ORM.SqlCE.Integration.Test\bin\Debug\OpenNETCF.ORM.SqlCe_Accessor.dll
+C:\Users\stefan.kastory\Documents\GoogleCode\open-net-orm\trunk\sources\Tests\OpenNETCF.ORM.SqlCE.Integration.Test\bin\Debug\OpenNETCF.ORM.SqlCe_Accessor.pdb
+C:\Users\stefan.kastory\Documents\GoogleCode\open-net-orm\trunk\sources\Tests\OpenNETCF.ORM.SqlCE.Integration.Test\obj\Debug\ResolveAssemblyReference.cache
+C:\Users\stefan.kastory\Documents\GoogleCode\open-net-orm\trunk\sources\Tests\OpenNETCF.ORM.SqlCE.Integration.Test\obj\Debug\OpenNETCF.ORM.SqlCE.Integration.Test.dll
+C:\Users\stefan.kastory\Documents\GoogleCode\open-net-orm\trunk\sources\Tests\OpenNETCF.ORM.SqlCE.Integration.Test\obj\Debug\OpenNETCF.ORM.SqlCE.Integration.Test.pdb

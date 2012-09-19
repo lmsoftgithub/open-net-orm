@@ -87,7 +87,7 @@ namespace OpenNETCF.ORM
             {
                 foreach (var entity in this.Entities)
                 {
-                    CreateTable(connection, entity);
+                    DropAndCreateTable(connection, entity);
                 }
             }
             finally
@@ -96,131 +96,23 @@ namespace OpenNETCF.ORM
             }
         }
 
-        ///// <summary>
-        ///// Creates the table if it does not already exists and create the fields if they don't already exist.
-        ///// </summary>
-        ///// <param name="connection"></param>
-        ///// <param name="entity"></param>
-        //protected override void CreateTable(IDbConnection connection, EntityInfo entity)
-        //{
-        //    Boolean bTableExists = false;
-        //    Boolean bMultiplePrimaryKeys = false;
-        //    if (ReservedWords.Contains(entity.EntityName, StringComparer.InvariantCultureIgnoreCase))
-        //    {
-        //        throw new ReservedWordException(entity.EntityName);
-        //    }
+        public override void CreateOrUpdateStore()
+        {
+            if (!StoreExists) throw new StoreNotFoundException();
 
-        //    bTableExists = TableExists(connection, entity);
-
-        //    bMultiplePrimaryKeys = entity.Fields.KeyFields.Count > 1;
-
-        //    // Handles the case of tables with multiple primary keys
-        //    if (!bTableExists && bMultiplePrimaryKeys)
-        //    {
-        //        StringBuilder sql = new StringBuilder();
-        //        StringBuilder keys = new StringBuilder();
-        //        sql.AppendFormat("CREATE TABLE {0} ( ", entity.EntityName);
-        //        int count = entity.Fields.KeyFields.Count;
-        //        foreach (var field in entity.Fields.KeyFields)
-        //        {
-        //            sql.AppendFormat(" {0} {1} {2} ",
-        //                field.FieldName,
-        //                GetFieldDataTypeString(entity.EntityName, field),
-        //                GetFieldCreationAttributes(entity.EntityAttribute, field, true));
-        //            keys.Append(field.FieldName);
-        //            if (--count > 0)
-        //            {
-        //                sql.Append(", ");
-        //                keys.Append(", ");
-        //            }
-        //        }
-        //        sql.AppendFormat(", PRIMARY KEY({0}) )", keys.ToString());
-        //        using (var command = GetNewCommandObject())
-        //        {
-        //            command.CommandText = sql.ToString();
-        //            command.Connection = connection;
-        //            int i = command.ExecuteNonQuery();
-        //        }
-        //        bTableExists = true;
-        //    }
-
-        //    foreach (var field in entity.Fields)
-        //    {
-        //        StringBuilder sql = new StringBuilder();
-        //        if (!FieldExists(connection, entity, field))
-        //        {
-        //            if (ReservedWords.Contains(field.FieldName, StringComparer.InvariantCultureIgnoreCase))
-        //            {
-        //                throw new ReservedWordException(field.FieldName);
-        //            }
-        //            if (bTableExists)
-        //            {
-        //                sql.AppendFormat("ALTER TABLE {0} ADD ", entity.EntityName);
-        //            }
-        //            else
-        //            {
-        //                sql.AppendFormat("CREATE TABLE {0} ( ", entity.EntityName);
-        //            }
-        //            // ALTER TABLE {TABLENAME} 
-        //            // ADD {COLUMNNAME} {TYPE} {NULL|NOT NULL} 
-        //            // CONSTRAINT {CONSTRAINT_NAME} DEFAULT {DEFAULT_VALUE}
-        //            sql.AppendFormat(" {0} {1} {2} ",
-        //                field.FieldName,
-        //                GetFieldDataTypeString(entity.EntityName, field),
-        //                GetFieldCreationAttributes(entity.EntityAttribute, field, bMultiplePrimaryKeys));
-
-        //            if (bTableExists)
-        //            {
-        //            }
-        //            else
-        //            {
-        //                sql.AppendFormat(") ");
-        //            }
-
-        //            using (var command = GetNewCommandObject())
-        //            {
-        //                command.CommandText = sql.ToString();
-        //                command.Connection = connection;
-        //                int i = command.ExecuteNonQuery();
-        //            }
-        //            bTableExists = true;
-
-        //            // create indexes
-        //            if (field.SearchOrder != FieldSearchOrder.NotSearchable)
-        //            {
-        //                VerifyIndex(entity.EntityName, field.FieldName, field.SearchOrder, connection);
-        //            }
-        //        }
-        //        else
-        //        {
-        //            // create indexes
-        //            if (field.SearchOrder != FieldSearchOrder.NotSearchable)
-        //            {
-        //                VerifyIndex(entity.EntityName, field.FieldName, field.SearchOrder, connection);
-        //            }
-        //        }
-        //    }
-        //}
-
-        //protected override Boolean FieldExists(IDbConnection connection, EntityInfo entity, FieldAttribute field)
-        //{
-        //    Boolean exists = false;
-        //    try
-        //    {
-        //        // ANSI SQL way.  Works in PostgreSQL, MSSQL, MySQL.  
-        //        using (var command = GetNewCommandObject())
-        //        {
-        //            command.CommandText = String.Format("select count(*) from Information_SCHEMA.columns where table_name='{0}' and column_name='{1}'", entity.EntityName, field.FieldName);
-        //            command.Connection = connection;
-        //            exists = (int)command.ExecuteScalar() > 0;
-        //        }
-        //    }
-        //    catch
-        //    {
-        //        exists = false;
-        //    }
-        //    return exists;
-        //}
+            var connection = GetConnection(true);
+            try
+            {
+                foreach (var entity in this.Entities)
+                {
+                    CreateTable(connection, entity);
+                }
+            }
+            finally
+            {
+                DoneWithConnection(connection, true);
+            }
+        }
 
         protected override string VerifyIndex(string entityName, string fieldName, FieldSearchOrder searchOrder, IDbConnection connection)
         {
@@ -385,146 +277,7 @@ namespace OpenNETCF.ORM
             return insertCommand;
         }
 
-        /// <summary>
-        /// Check whether the object already exists and should be updated or the object doesn't exist and should be added.
-        /// </summary>
-        /// <param name="item"></param>
-        public void InsertOrUpdate(object item)
-        {
-            InsertOrUpdate(item, false);
-        }
-
-        public override void InsertOrUpdate(object item, bool insertReferences, bool transactional)
-        {
-            IDbTransaction transaction = null;
-            if (transactional)
-            {
-                transaction = GetTransaction(false);
-            }
-            try
-            {
-                InsertOrUpdate(item, insertReferences, transaction);
-                if (transaction != null) transaction.Commit();
-            }
-            catch
-            {
-                if (transaction != null) transaction.Rollback();
-                throw;
-            }
-            finally
-            {
-                DoneWithTransaction(transaction, false);
-            }
-        }
-
-        protected override void InsertOrUpdate(object item, bool insertReferences, IDbTransaction transaction)
-        {
-            if (this.Contains(item))
-            {
-                Update(item, insertReferences, null, transaction);
-            }
-            else
-            {
-                Insert(item, insertReferences, transaction);
-            }
-        }
-
-        /// <summary>
-        /// Check whether the object already exists and should be updated or the object doesn't exist and should be added.
-        /// </summary>
-        /// <param name="item"></param>
-        /// <param name="insertReferences"></param>
-        public override void InsertOrUpdate(object item, bool insertReferences)
-        {
-            // Commented - 2012.08.08 - Replaced with built-in "Contains" function.
-            //var itemType = item.GetType();
-            //string entityName = m_entities.GetNameForType(itemType);
-
-            //if (entityName == null)
-            //{
-            //    throw new EntityNotFoundException(item.GetType());
-            //}
-
-            //Boolean exists = false;
-            //var connection = GetConnection(false);
-            //try
-            //{
-            //    CheckOrdinals(entityName);
-            //    CheckPrimaryKeyIndex(entityName);
-            //    object keyValue = System.DBNull.Value;
-            //    using (var command = GetNewCommandObject())
-            //    {
-            //        command.Connection = connection;
-            //        StringBuilder sql = new StringBuilder();
-            //        StringBuilder where = new StringBuilder(" WHERE ");
-
-            //        sql.Append("SELECT ");
-            //        int count = Entities[entityName].Fields.KeyFields.Count;
-            //        foreach (FieldAttribute field in Entities[entityName].Fields.KeyFields)
-            //        {
-            //            sql.Append(field.FieldName);
-            //            where.AppendFormat(" [{0}] = @{0} ", field.FieldName);
-            //            keyValue = field.PropertyInfo.GetValue(item, null);
-            //            command.Parameters.Add(new SqlParameter(String.Format("@{0}", field.FieldName), keyValue));
-            //            if (--count > 0)
-            //            {
-            //                sql.Append(", ");
-            //                where.Append(" AND ");
-            //            }
-            //        }
-            //        sql.AppendFormat(" FROM {0} {1}", entityName, where.ToString());
-
-            //        command.CommandText = sql.ToString();
-            //        command.CommandType = CommandType.Text;
-            //        using (var reader = command.ExecuteReader() as SqlDataReader)
-            //        {
-            //            exists = reader.HasRows;
-            //        }
-            //    }
-            //}
-            //finally
-            //{
-            //    DoneWithConnection(connection, false);
-            //}
-            InsertOrUpdate(item, insertReferences, false);
-        }
-
-        /// <summary>
-        /// Inserts the provided entity instance into the underlying data store.
-        /// </summary>
-        /// <param name="item"></param>
-        /// <remarks>
-        /// If the entity has an identity field, calling Insert will populate that field with the identity vale vefore returning
-        /// </remarks>
-        public override void Insert(object item, bool insertReferences)
-        {
-            Insert(item, insertReferences, false);
-        }
-        public override void Insert(object item, bool insertReferences, bool transactional)
-        {
-            //IDbConnection connection = null;
-            IDbTransaction transaction = null;
-            if (transactional)
-            {
-                transaction = GetTransaction(false);
-            }
-            try
-            {
-                Insert(item, insertReferences, transaction);
-                if (transaction != null) transaction.Commit();
-            }
-            catch
-            {
-                if (transaction != null) transaction.Rollback();
-                throw;
-            }
-            finally
-            {
-                DoneWithTransaction(transaction, false);
-            }
-        }
-
-        protected override void Insert(object item, bool insertReferences, IDbTransaction transaction)
+        protected override void Insert(object item, bool insertReferences, IDbTransaction transaction, bool checkUpdates)
         {
             var itemType = item.GetType();
             string entityName = m_entities.GetNameForType(itemType);
@@ -682,6 +435,16 @@ namespace OpenNETCF.ORM
             }
         }
 
+        protected override void BulkInsert(object items, bool insertReferences, IDbTransaction transaction)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override void BulkInsertOrUpdate(object items, bool insertReferences, IDbTransaction transaction)
+        {
+            throw new NotImplementedException();
+        }
+
         protected override IDataParameter CreateParameterObject(string parameterName, object parameterValue)
         {
             return new SqlParameter(parameterName, parameterValue);
@@ -698,7 +461,6 @@ namespace OpenNETCF.ORM
 
         private int GetIdentity(IDbTransaction transaction)
         {
-            //using (var command = new SqlCommand("SELECT @@IDENTITY", connection as SqlConnection))
             using (var command = new SqlCommand("SELECT SCOPE_IDENTITY()", transaction.Connection as SqlConnection, transaction as SqlTransaction))
             {
                 object id = command.ExecuteScalar();
