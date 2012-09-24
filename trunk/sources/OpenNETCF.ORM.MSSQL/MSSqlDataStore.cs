@@ -288,11 +288,10 @@ namespace OpenNETCF.ORM
             }
 
             IDbConnection connection = null;
-            if (transaction == null) connection = GetConnection(false);
+            if (transaction == null && connection == null) connection = GetConnection(false);
             try
             {
-                //                CheckOrdinals(entityName);
-
+                // CheckOrdinals(entityName);
                 FieldAttribute identity = null;
                 var command = GetInsertCommand(entityName);
                 if (transaction == null)
@@ -399,32 +398,11 @@ namespace OpenNETCF.ORM
                             {
                                 et = m_entities.GetNameForType(element.GetType());
                             }
-                            // Added - 2012.08.08 - Handles cascading updates of references.
                             Entities[et].Fields[reference.ReferenceField].PropertyInfo.SetValue(element, fk, null);
-                            this.InsertOrUpdate(element, insertReferences, transaction);
-
-                            // Commented - 2012.08.08 - Replaced by the change above for safety.
-                            //// get the FK value
-                            //var keyValue = Entities[et].Fields.KeyField.PropertyInfo.GetValue(element, null);
-                            //bool isNew = false;
-                            //// only do an insert if the value is new (i.e. need to look for existing reference items)
-                            //// not certain how this will work right now, so for now we ask the caller to know what they're doing
-                            //switch (keyScheme)
-                            //{
-                            //    case KeyScheme.Identity:
-                            //        // TODO: see if PK field value == -1
-                            //        isNew = keyValue.Equals(-1);
-                            //        break;
-                            //    case KeyScheme.GUID:
-                            //        // TODO: see if PK field value == null
-                            //        isNew = keyValue.Equals(null);
-                            //        break;
-                            //}
-                            //if (isNew)
-                            //{
-                            //    Entities[et].Fields[reference.ReferenceField].PropertyInfo.SetValue(element, fk, null);
-                            //    Insert(element);
-                            //}
+                            if (checkUpdates)
+                                this.InsertOrUpdate(element, insertReferences, transaction);
+                            else
+                                this.Insert(element, insertReferences, transaction, false);
                         }
                     }
                 }
@@ -437,12 +415,44 @@ namespace OpenNETCF.ORM
 
         protected override void BulkInsert(object items, bool insertReferences, IDbTransaction transaction)
         {
-            throw new NotImplementedException();
+            if (items != null)
+            {
+                if (items.GetType().IsArray)
+                {
+                    foreach (var item in items as Array)
+                    {
+                        Insert(item, insertReferences, transaction, false);
+                    }
+                }
+                else if (items is System.Collections.IEnumerable)
+                {
+                    foreach (var item in items as System.Collections.IEnumerable)
+                    {
+                        Insert(item, insertReferences, transaction, false);
+                    }
+                }
+            }
         }
 
         protected override void BulkInsertOrUpdate(object items, bool insertReferences, IDbTransaction transaction)
         {
-            throw new NotImplementedException();
+            if (items != null)
+            {
+                if (items.GetType().IsArray)
+                {
+                    foreach (var item in items as Array)
+                    {
+                        InsertOrUpdate(item, insertReferences, transaction);
+                    }
+                }
+                else if (items is System.Collections.IEnumerable)
+                {
+                    foreach (var item in items as System.Collections.IEnumerable)
+                    {
+                        InsertOrUpdate(item, insertReferences, transaction);
+                    }
+                }
+            }
         }
 
         protected override IDataParameter CreateParameterObject(string parameterName, object parameterValue)
