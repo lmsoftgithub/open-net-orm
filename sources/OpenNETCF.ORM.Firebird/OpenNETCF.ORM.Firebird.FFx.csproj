@@ -5,14 +5,13 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{4C07A875-090F-4F4D-A24A-0946670F8660}</ProjectGuid>
+    <ProjectGuid>{5F5FB4F7-9ED1-4AFE-AA4E-9E4F83EA261E}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>OpenNETCF.ORM</RootNamespace>
-    <AssemblyName>OpenNETCF.ORM.MSSQL</AssemblyName>
+    <RootNamespace>OpenNETCF.ORM.Firebird</RootNamespace>
+    <AssemblyName>OpenNETCF.ORM.Firebird</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -32,6 +31,10 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="FirebirdSql.Data.FirebirdClient, Version=2.7.7.0, Culture=neutral, PublicKeyToken=3750abcc3150b00c, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>.\FirebirdSql.Data.FirebirdClient.FF.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -43,29 +46,33 @@
     <Compile Include="..\OpenNETCF.ORM.Shared\OpenNETCF.ORM.Version.cs">
       <Link>Properties\OpenNETCF.ORM.Version.cs</Link>
     </Compile>
-    <Compile Include="MSSqlDataStore.cs" />
-    <Compile Include="MSSqlDataStore_Delete.cs">
-      <DependentUpon>MSSqlDataStore.cs</DependentUpon>
-    </Compile>
-    <Compile Include="MSSqlDataStore_Fetch.cs">
-      <DependentUpon>MSSqlDataStore.cs</DependentUpon>
-    </Compile>
-    <Compile Include="MSSqlDataStore_Insert.cs">
-      <DependentUpon>MSSqlDataStore.cs</DependentUpon>
-    </Compile>
-    <Compile Include="MSSqlDataStore_Select.cs">
-      <DependentUpon>MSSqlDataStore.cs</DependentUpon>
-    </Compile>
-    <Compile Include="MSSqlDataStore_Update.cs">
-      <DependentUpon>MSSqlDataStore.cs</DependentUpon>
-    </Compile>
+    <Compile Include="FbEntityInfo.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="FirebirdDataStore.cs" />
+    <Compile Include="FirebirdDataStore_Fetch.cs">
+      <DependentUpon>FirebirdDataStore.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FirebirdDataStore_Delete.cs">
+      <DependentUpon>FirebirdDataStore.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FirebirdDataStore_Insert.cs">
+      <DependentUpon>FirebirdDataStore.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FirebirdDataStore_Update.cs">
+      <DependentUpon>FirebirdDataStore.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FirebirdDataStore_Select.cs">
+      <DependentUpon>FirebirdDataStore.cs</DependentUpon>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\OpenNETCF.ORM\OpenNETCF.ORM.FFx.csproj">
       <Project>{6E9C7DA3-AD60-4E44-9D3A-7BBD3A20D79F}</Project>
       <Name>OpenNETCF.ORM.FFx</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="FirebirdSql.Data.FirebirdClient.FF.dll" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
