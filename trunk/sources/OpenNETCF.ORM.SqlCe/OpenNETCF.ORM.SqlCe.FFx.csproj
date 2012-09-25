@@ -86,6 +86,9 @@
     <Compile Include="SqlCeDataStore_Fetch.cs">
       <DependentUpon>SqlCEDataStore.cs</DependentUpon>
     </Compile>
+    <Compile Include="SqlCeDataStore_Insert.cs">
+      <DependentUpon>SqlCEDataStore.cs</DependentUpon>
+    </Compile>
     <Compile Include="SqlCeDataStore_Select.cs">
       <DependentUpon>SqlCEDataStore.cs</DependentUpon>
     </Compile>

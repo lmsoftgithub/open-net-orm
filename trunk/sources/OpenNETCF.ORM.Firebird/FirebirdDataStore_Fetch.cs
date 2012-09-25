@@ -1,0 +1,179 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Diagnostics;
+using System.Reflection;
+using System.Data;
+using System.IO;
+using System.Runtime.InteropServices;
+using System.Data.Common;
+using FirebirdSql.Data.FirebirdClient;
+
+namespace OpenNETCF.ORM
+{
+    public partial class FirebirdDataStore
+    {
+
+        /// <summary>
+        /// Fetches a sorted list of entities, up to the requested number of entity instances, of the specified type from the DataStore, starting with the specified instance
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="searchFieldName"></param>
+        /// <param name="fetchCount"></param>
+        /// <param name="firstRowOffset"></param>
+        /// <returns></returns>
+        public override T[] Fetch<T>(int fetchCount, int firstRowOffset, string sortField)
+        {
+            return Fetch<T>(fetchCount, firstRowOffset, sortField, FieldSearchOrder.Ascending, null, false);
+        }
+
+        /// <summary>
+        /// Fetches up to the requested number of entity instances of the specified type from the DataStore, starting with the first instance
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="fetchCount"></param>
+        /// <returns></returns>
+        public override T[] Fetch<T>(int fetchCount)
+        {
+            var type = typeof(T);
+            var items = Select(type, null, null, fetchCount, 0, false, false);
+            return items.Cast<T>().ToArray();
+        }
+
+        /// <summary>
+        /// Fetches up to the requested number of entity instances of the specified type from the DataStore, starting with the specified instance
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="fetchCount"></param>
+        /// <param name="firstRowOffset"></param>
+        /// <returns></returns>
+        public override T[] Fetch<T>(int fetchCount, int firstRowOffset)
+        {
+            var type = typeof(T);
+            var items = Select(type, null, null, fetchCount, firstRowOffset, false, false);
+            return items.Cast<T>().ToArray();
+        }
+
+        public override T[] Fetch<T>(int fetchCount, int firstRowOffset, string sortField, FieldSearchOrder sortOrder, FilterCondition filter, bool fillReferences)
+        {
+            return Fetch<T>(fetchCount, firstRowOffset, sortField, sortOrder, filter, fillReferences, false);
+        }
+
+        public override T[] Fetch<T>(int fetchCount, int firstRowOffset, string sortField, FieldSearchOrder sortOrder, FilterCondition filter, bool fillReferences, bool filterReferences)
+        {
+            var type = typeof(T);
+            string entityName = m_entities.GetNameForType(type);
+            List<T> list = new List<T>();
+            string indexName;
+
+            if (!string.IsNullOrEmpty(sortField))
+            {
+                var field = Entities[entityName].Fields[sortField];
+
+                if (field == null)
+                {
+                    throw new FieldNotFoundException(
+                        string.Format("Sort Field '{0}' not found in Entity '{1}'", sortField, entityName));
+                }
+
+                if (sortOrder == FieldSearchOrder.NotSearchable)
+                {
+                    throw new System.ArgumentException("You must select a valid sort order if providing a sort field.");
+                }
+
+                // ensure that an index exists on the sort field - yes this may slow things down on the first query
+                indexName = VerifyIndex(entityName, sortField, sortOrder);
+            }
+            else
+            {
+                CheckPrimaryKeyIndex(entityName);
+                indexName = Entities[entityName].Fields.KeyField.FieldName;
+            }
+
+            var connection = GetConnection(false);
+            try
+            {
+                using (var command = new FbCommand())
+                {
+                    //command.CommandText = Entities[entityName].EntityAttribute.NameInStore;
+                    //command.CommandType = CommandType.TableDirect;
+                    //command.IndexName = indexName;
+                    //command.Connection = connection as SqlConnection;
+
+                    //command = GetSelectCommand<SqlCommand, SqlParameter>(entityName, filters, out tableDirect);
+                    //command.Connection = connection as SqlConnection;
+
+                    //int count = 0;
+                    //int currentOffset = 0;
+                    //int filterOrdinal = -1;
+
+                    //using (var results = command.ExecuteReader(CommandBehavior.SingleResult))
+                    //{
+                    //    // get the ordinal for the filter field (if one is used)
+                    //    if (filter != null)
+                    //    {
+                    //        filterOrdinal = results.GetOrdinal(filter.FieldName);
+                    //    }
+
+                    //    while (results.Read())
+                    //    {
+                    //        // skip until we hit the desired offset - respecting any filter
+                    //        if (currentOffset < firstRowOffset)
+                    //        {
+                    //            if (filterOrdinal >= 0)
+                    //            {
+                    //                var checkValue = results[filterOrdinal];
+
+                    //                //if (MatchesFilter(checkValue, filter))
+                    //                //{
+                    //                //    currentOffset++;
+                    //                //}
+                    //            }
+                    //            else
+                    //            {
+                    //                currentOffset++;
+                    //            }
+                    //        }
+                    //        else // pull values (respecting filters) until we have the count fulfilled
+                    //        {
+                    //            //if (filterOrdinal >= 0)
+                    //            //{
+                    //            //    var checkValue = results[filterOrdinal];
+
+                    //            //    if (MatchesFilter(checkValue, filter))
+                    //            //    {
+                    //            //        // hydrate the object
+                    //            //        var item = HydrateEntity<T>(entityName, results, fillReferences);
+                    //            //        list.Add(item);
+
+                    //            //        currentOffset++;
+                    //            //        count++;
+                    //            //    }
+                    //            //}
+                    //            //else
+                    //            //{
+                    //            //    // hydrate the object
+                    //            //    var item = HydrateEntity<T>(entityName, results, fillReferences);
+                    //            //    list.Add(item);
+
+                    //            //    currentOffset++;
+                    //            //    count++;
+                    //            //}
+
+                    //            if (count >= fetchCount) break;
+                    //        }
+                    //    }
+                    //}
+                }
+            }
+            finally
+            {
+                DoneWithConnection(connection, false);
+            }
+
+            return list.ToArray();
+        }
+
+    }
+}
