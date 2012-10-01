@@ -47,5 +47,10 @@ namespace OpenNETCF.ORM
         {
             get { return m_entities[entityName.ToLower()]; }
         }
+
+        public bool HasEntity(String entityName)
+        {
+            return m_entities.ContainsKey(entityName.ToLower());
+        }
     }
 }

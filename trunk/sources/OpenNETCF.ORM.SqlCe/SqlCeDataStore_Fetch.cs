@@ -9,6 +9,11 @@ namespace OpenNETCF.ORM
 {
     partial class SqlCeDataStore
     {
+        public override object[] Fetch(Type entityType, int fetchCount, int firstRowOffset, string sortField, FieldSearchOrder sortOrder, FilterCondition filter, bool fillReferences, bool filterReferences)
+        {
+            throw new NotImplementedException();
+        }
+
         public override T[] Fetch<T>(int fetchCount, int firstRowOffset, string sortField, FieldSearchOrder sortOrder, FilterCondition filter, bool fillReferences, bool filterReferences)
         {
             var type = typeof(T);
@@ -89,7 +94,7 @@ namespace OpenNETCF.ORM
                                     if (MatchesFilter(checkValue, filter))
                                     {
                                         // hydrate the object
-                                        var item = HydrateEntity<T>(entityName, results, fillReferences);
+                                        var item = HydrateEntity<T>(entityName, results, fillReferences, connection);
                                         list.Add(item);
 
                                         currentOffset++;
@@ -99,7 +104,7 @@ namespace OpenNETCF.ORM
                                 else
                                 {
                                     // hydrate the object
-                                    var item = HydrateEntity<T>(entityName, results, fillReferences);
+                                    var item = HydrateEntity<T>(entityName, results, fillReferences, connection);
                                     list.Add(item);
 
                                     currentOffset++;
@@ -120,7 +125,7 @@ namespace OpenNETCF.ORM
             return list.ToArray();
         }
 
-        private T HydrateEntity<T>(string entityName, SqlCeResultSet results, bool fillReferences)
+        private T HydrateEntity<T>(string entityName, SqlCeResultSet results, bool fillReferences, IDbConnection connection)
             where T : new()
         {
             var objectType = typeof(T);
@@ -190,7 +195,7 @@ namespace OpenNETCF.ORM
             if ((fillReferences) && (referenceFields.Length > 0))
             {
                 //FillReferences(item, rowPK, referenceFields, true);
-                FillReferences(item, rowPK, referenceFields, false, fillReferences);
+                FillReferences(item, rowPK, referenceFields, false, fillReferences, connection);
             }
 
             return item;

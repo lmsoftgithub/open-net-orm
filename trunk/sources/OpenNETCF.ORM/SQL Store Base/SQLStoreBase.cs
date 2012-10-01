@@ -45,13 +45,14 @@ namespace OpenNETCF.ORM
         public override void InsertOrUpdate(object item, bool insertReferences, bool transactional)
         {
             IDbTransaction transaction = null;
+            IDbConnection connection = null;
             if (transactional)
-            {
                 transaction = GetTransaction(false);
-            }
+            else
+                connection = GetConnection(false);
             try
             {
-                InsertOrUpdate(item, insertReferences, transaction);
+                InsertOrUpdate(item, insertReferences, connection, transaction);
                 if (transaction != null) transaction.Commit();
             }
             catch
@@ -62,17 +63,18 @@ namespace OpenNETCF.ORM
             finally
             {
                 DoneWithTransaction(transaction, false);
+                DoneWithConnection(connection, false);
             }
         }
-        protected virtual void InsertOrUpdate(object item, bool insertReferences, IDbTransaction transaction)
+        protected virtual void InsertOrUpdate(object item, bool insertReferences, IDbConnection connection, IDbTransaction transaction)
         {
             if (this.Contains(item))
             {
-                Update(item, insertReferences, null, transaction);
+                Update(item, insertReferences, null, connection, transaction);
             }
             else
             {
-                Insert(item, insertReferences, transaction, true);
+                Insert(item, insertReferences, connection, transaction, true);
             }
         }
 
@@ -82,15 +84,15 @@ namespace OpenNETCF.ORM
         }
         public override void Insert(object item, bool insertReferences, bool transactional)
         {
-            //IDbConnection connection = null;
             IDbTransaction transaction = null;
+            IDbConnection connection = null;
             if (transactional)
-            {
                 transaction = GetTransaction(false);
-            }
+            else
+                connection = GetConnection(false);
             try
             {
-                Insert(item, insertReferences, transaction, false);
+                Insert(item, insertReferences, connection, transaction, false);
                 if (transaction != null) transaction.Commit();
             }
             catch
@@ -101,11 +103,10 @@ namespace OpenNETCF.ORM
             finally
             {
                 DoneWithTransaction(transaction, false);
+                DoneWithConnection(connection, false);
             }
         }
-        protected abstract void Insert(object item, bool insertReferences, IDbTransaction transaction, bool checkUpdate);
-
-        protected abstract object[] Select(Type objectType, IEnumerable<FilterCondition> filters, int fetchCount, int firstRowOffset, bool fillReferences, bool filterReferences);
+        protected abstract void Insert(object item, bool insertReferences, IDbConnection connection, IDbTransaction transaction, bool checkUpdate);
 
         public override void Update(object item, bool cascadeUpdates, string fieldName)
         {
@@ -114,13 +115,14 @@ namespace OpenNETCF.ORM
         public override void Update(object item, bool cascadeUpdates, string fieldName, bool transactional)
         {
             IDbTransaction transaction = null;
+            IDbConnection connection = null;
             if (transactional)
-            {
                 transaction = GetTransaction(false);
-            }
+            else
+                connection = GetConnection(false);
             try
             {
-                Update(item, cascadeUpdates, fieldName, transaction);
+                Update(item, cascadeUpdates, fieldName, connection, transaction);
                 if (transaction != null) transaction.Commit();
             }
             catch
@@ -131,9 +133,10 @@ namespace OpenNETCF.ORM
             finally
             {
                 DoneWithTransaction(transaction, false);
+                DoneWithConnection(connection, false);
             }
         }
-        protected abstract void Update(object item, bool cascadeUpdates, string fieldName, IDbTransaction transaction);
+        protected abstract void Update(object item, bool cascadeUpdates, string fieldName, IDbConnection connection, IDbTransaction transaction);
 
         public override void BulkInsert(object items, bool insertReferences)
         {
@@ -142,13 +145,14 @@ namespace OpenNETCF.ORM
         public override void BulkInsert(object items, bool insertReferences, bool transactional)
         {
             IDbTransaction transaction = null;
+            IDbConnection connection = null;
             if (transactional)
-            {
                 transaction = GetTransaction(false);
-            }
+            else
+                connection = GetConnection(false);
             try
             {
-                BulkInsert(items, insertReferences, transaction);
+                BulkInsert(items, insertReferences, connection, transaction);
                 if (transaction != null) transaction.Commit();
             }
             catch
@@ -159,9 +163,10 @@ namespace OpenNETCF.ORM
             finally
             {
                 DoneWithTransaction(transaction, false);
+                DoneWithConnection(connection, false);
             }
         }
-        protected abstract void BulkInsert(object items, bool insertReferences, IDbTransaction transaction);
+        protected abstract void BulkInsert(object items, bool insertReferences, IDbConnection connection, IDbTransaction transaction);
 
         public override void BulkInsertOrUpdate(object items, bool insertReferences)
         {
@@ -170,13 +175,14 @@ namespace OpenNETCF.ORM
         public override void BulkInsertOrUpdate(object items, bool insertReferences, bool transactional)
         {
             IDbTransaction transaction = null;
+            IDbConnection connection = null;
             if (transactional)
-            {
                 transaction = GetTransaction(false);
-            }
+            else
+                connection = GetConnection(false);
             try
             {
-                BulkInsertOrUpdate(items, insertReferences, transaction);
+                BulkInsertOrUpdate(items, insertReferences, connection, transaction);
                 if (transaction != null) transaction.Commit();
             }
             catch
@@ -187,15 +193,10 @@ namespace OpenNETCF.ORM
             finally
             {
                 DoneWithTransaction(transaction, false);
+                DoneWithConnection(connection, false);
             }
         }
-        protected abstract void BulkInsertOrUpdate(object items, bool insertReferences, IDbTransaction transaction);
-
-        public override T[] Fetch<T>(int fetchCount, int firstRowOffset, string sortField, FieldSearchOrder sortOrder, FilterCondition filter, bool fillReferences)
-        {
-            return Fetch<T>(fetchCount, firstRowOffset, sortField, sortOrder, filter, fillReferences, false);
-        }
-        public abstract override T[] Fetch<T>(int fetchCount, int firstRowOffset, string sortField, FieldSearchOrder sortOrder, FilterCondition filter, bool fillReferences, bool filterReferences);
+        protected abstract void BulkInsertOrUpdate(object items, bool insertReferences, IDbConnection connection, IDbTransaction transaction);
 
         public abstract override int Count<T>(IEnumerable<FilterCondition> filters);
 
@@ -205,7 +206,7 @@ namespace OpenNETCF.ORM
 
         public SQLStoreBase()
         {
-            DefaultStringFieldSize = 200;
+            DefaultStringFieldSize = 255;
             DefaultNumericFieldPrecision = 16;
             DefaultVarBinaryLength = 8000;
         }
@@ -219,6 +220,8 @@ namespace OpenNETCF.ORM
         {
             if (m_connection != null)
             {
+                if (m_connection.State == ConnectionState.Open)
+                    m_connection.Close();
                 m_connection.Dispose();
             }
 
@@ -300,7 +303,16 @@ namespace OpenNETCF.ORM
             }
         }
 
-        public bool TableExists(EntityInfo entityInfo)
+        public override bool TableExists(String entityName)
+        {
+            var entityInfo = this.GetEntityInfo(entityName);
+            if (entityInfo != null)
+                return TableExists(entityInfo);
+            else
+                return false;
+        }
+
+        public override bool TableExists(EntityInfo entityInfo)
         {
             Boolean exists = false;
             var connection = GetConnection(false);
@@ -323,7 +335,26 @@ namespace OpenNETCF.ORM
             return exists;
         }
 
-        public bool FieldExists(EntityInfo entityInfo, FieldAttribute fieldInfo)
+        public override bool FieldExists(String entityName, String fieldName)
+        {
+            var entityInfo = this.GetEntityInfo(entityName);
+            if (entityInfo != null)
+            {
+                if (entityInfo.Fields.HasField(fieldName))
+                {
+                    var fieldInfo = entityInfo.Fields[fieldName];
+                    return FieldExists(entityInfo, fieldInfo);
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            else
+                return false;
+        }
+
+        public override bool FieldExists(EntityInfo entityInfo, FieldAttribute fieldInfo)
         {
             Boolean exists = false;
             var connection = GetConnection(false);
@@ -534,7 +565,7 @@ namespace OpenNETCF.ORM
                         // create indexes
                         if (field.SearchOrder != FieldSearchOrder.NotSearchable)
                         {
-                            VerifyIndex(entity.EntityName, field.FieldName, field.SearchOrder, connection);
+                            field.IndexName = VerifyIndex(entity.EntityName, field.FieldName, field.SearchOrder, connection);
                         }
                     }
                     else
@@ -542,21 +573,70 @@ namespace OpenNETCF.ORM
                         // create indexes
                         if (field.SearchOrder != FieldSearchOrder.NotSearchable)
                         {
-                            VerifyIndex(entity.EntityName, field.FieldName, field.SearchOrder, connection);
+                            field.IndexName = VerifyIndex(entity.EntityName, field.FieldName, field.SearchOrder, connection);
                         }
                     }
                 }
             }
         }
 
-        protected virtual void DropAndCreateTable(IDbConnection connection, EntityInfo entity)
+        protected virtual void CreateTableRecursive(IDbConnection connection, EntityInfo entity)
         {
-            Boolean bTableExists = TableExists(connection, entity);
-            if (bTableExists)
-            {
-                Drop(connection, entity);
-            }
             CreateTable(connection, entity);
+            if (entity.References.Count > 0)
+            {
+                foreach (var reference in entity.References)
+                {
+                    string entityName = this.m_entities.GetNameForType(reference.ReferenceEntityType);
+
+                    if (entityName == null)
+                    {
+                        throw new EntityNotFoundException(reference.ReferenceEntityType);
+                    }
+                    CreateTableRecursive(connection, this.m_entities[entityName]);
+                }
+            }
+        }
+
+        public override void DropAndCreateTable<T>(bool cascade = false)
+        {
+            DropAndCreateTable(typeof(T), cascade);
+        }
+
+        public override void DropAndCreateTable(Type entityType, bool cascade = false)
+        {
+            string entityName = m_entities.GetNameForType(entityType);
+
+            if (entityName == null)
+            {
+                throw new EntityNotFoundException(entityType);
+            }
+
+            //TODO: Handle cascade drops
+            EntityInfo entity = m_entities[entityName];
+
+            var connection = GetConnection(true);
+            try
+            {
+                DropAndCreateTable(connection, entity,cascade);
+            }
+            finally
+            {
+                DoneWithConnection(connection, true);
+            }
+        }
+
+        protected virtual void DropAndCreateTable(IDbConnection connection, EntityInfo entity, bool cascade = false)
+        {
+            if (cascade)
+                DropRecursive(connection, entity);
+            else if (TableExists(connection, entity))
+                Drop(connection, entity);
+            
+            if (cascade)
+                CreateTableRecursive(connection, entity);
+            else
+                CreateTable(connection, entity);
         }
 
         protected virtual Boolean FieldExists(IDbConnection connection, EntityInfo entity, FieldAttribute field)
@@ -660,7 +740,7 @@ namespace OpenNETCF.ORM
             {
                 var indexName = string.Format("ORM_IDX_{0}_{1}_{2}", entityName, fieldName,
                     searchOrder == FieldSearchOrder.Descending ? "DESC" : "ASC");
-
+                
                 if (m_indexNameCache.FirstOrDefault(ii => ii.Name == indexName) != null) return indexName;
 
                 using (var command = GetNewCommandObject())
@@ -803,6 +883,8 @@ namespace OpenNETCF.ORM
                     {
                         case DbType.Int32:
                         case DbType.UInt32:
+                        case DbType.Int64:
+                        case DbType.UInt64:
                             sb.Append(AutoIncrementFieldIdentifier + " ");
                             break;
                         case DbType.Guid:
@@ -858,12 +940,12 @@ namespace OpenNETCF.ORM
             return deserializer;
         }
 
-        /// <summary>
-        /// Determines if the specified object already exists in the Store (by primary key value)
-        /// </summary>
-        /// <param name="item"></param>
-        /// <returns></returns>
         public override bool Contains(object item)
+        {
+            return Contains(item, null);
+        }
+
+        public virtual bool Contains(object item, IDbConnection connection)
         {
             var itemType = item.GetType();
             string entityName = m_entities.GetNameForType(itemType);
@@ -883,7 +965,7 @@ namespace OpenNETCF.ORM
             {
                 filters.Add(new FilterCondition(field.FieldName, field.PropertyInfo.GetValue(item, null), FilterCondition.FilterOperator.Equals));
             }
-            var existing = Select(itemType, filters, 0, 0, false, false).FirstOrDefault();
+            var existing = Select(itemType, filters, 0, 0, false, false, connection).FirstOrDefault();
 
             return existing != null;
         }
@@ -906,7 +988,7 @@ namespace OpenNETCF.ORM
 
         public override T Select<T>(object primaryKey, bool fillReferences, bool filterReferences)
         {
-            return (T)Select(typeof(T), null, primaryKey, -1, -1, fillReferences, false).FirstOrDefault();
+            return (T)Select(typeof(T), null, primaryKey, -1, -1, fillReferences, false, null).FirstOrDefault();
         }
 
         /// <summary>
@@ -916,9 +998,7 @@ namespace OpenNETCF.ORM
         /// <returns></returns>
         public override T[] Select<T>()
         {
-            var type = typeof(T);
-            var items = Select(type, null, null, -1, 0);
-            return items.Cast<T>().ToArray();
+            return Select(typeof(T), null, null, -1, 0, false, false, null).Cast<T>().ToArray();
         }
 
         /// <summary>
@@ -940,9 +1020,7 @@ namespace OpenNETCF.ORM
         /// <returns></returns>
         public override T[] Select<T>(bool fillReferences, bool filterReferences)
         {
-            var type = typeof(T);
-            var items = Select(type, null, null, -1, 0, fillReferences, filterReferences);
-            return items.Cast<T>().ToArray();
+            return Select(typeof(T), null, null, -1, 0, fillReferences, filterReferences, null).Cast<T>().ToArray();
         }
 
         /// <summary>
@@ -962,9 +1040,25 @@ namespace OpenNETCF.ORM
 
         public override object[] Select(Type entityType, bool fillReferences, bool filterReferences)
         {
-            var items = Select(entityType, null, null, -1, 0, fillReferences, filterReferences);
-            return items.ToArray();
+            return Select(entityType, null, null, -1, 0, fillReferences, filterReferences, null);
         }
+
+        public override object[] Select(Type entityType, object primaryKey, bool fillReferences, bool filterReferences)
+        {
+            return Select(entityType, null, primaryKey, -1, -1, fillReferences, filterReferences, null);
+        }
+
+        public override object[] Select(Type objectType, IEnumerable<FilterCondition> filters, bool fillReferences)
+        {
+            return Select(objectType, filters, fillReferences, false);
+        }
+
+        public override object[] Select(Type objectType, IEnumerable<FilterCondition> filters, bool fillReferences, bool filterReferences)
+        {
+            return Select(objectType, filters, -1, -1, fillReferences, filterReferences, null);
+        }
+
+        protected abstract object[] Select(Type objectType, IEnumerable<FilterCondition> filters, int fetchCount, int firstRowOffset, bool fillReferences, bool filterReferences, IDbConnection connection);
 
         public override T[] Select<T>(string searchFieldName, object matchValue)
         {
@@ -978,9 +1072,7 @@ namespace OpenNETCF.ORM
 
         public override T[] Select<T>(string searchFieldName, object matchValue, bool fillReferences, bool filterReferences)
         {
-            var type = typeof(T);
-            var items = Select(type, searchFieldName, matchValue, -1, 0, fillReferences, filterReferences);
-            return items.Cast<T>().ToArray();
+            return Select(typeof(T), searchFieldName, matchValue, -1, 0, fillReferences, filterReferences, null).Cast<T>().ToArray();
         }
 
         public override T[] Select<T>(IEnumerable<FilterCondition> filters)
@@ -995,16 +1087,10 @@ namespace OpenNETCF.ORM
 
         public override T[] Select<T>(IEnumerable<FilterCondition> filters, bool fillReferences, bool filterReferences)
         {
-            var objectType = typeof(T);
-            return Select(objectType, filters, -1, 0, fillReferences, filterReferences).Cast<T>().ToArray();
+            return Select(typeof(T), filters, -1, 0, fillReferences, filterReferences, null).Cast<T>().ToArray();
         }
 
-        private object[] Select(Type objectType, string searchFieldName, object matchValue, int fetchCount, int firstRowOffset)
-        {
-            return Select(objectType, searchFieldName, matchValue, fetchCount, firstRowOffset, true, false);
-        }
-
-        protected virtual object[] Select(Type objectType, string searchFieldName, object matchValue, int fetchCount, int firstRowOffset, bool fillReferences, bool filterReferences)
+        protected virtual object[] Select(Type objectType, string searchFieldName, object matchValue, int fetchCount, int firstRowOffset, bool fillReferences, bool filterReferences, IDbConnection connection)
         {
             string entityName = m_entities.GetNameForType(objectType);
             FilterCondition filter = null;
@@ -1045,7 +1131,7 @@ namespace OpenNETCF.ORM
                 fetchCount,
                 firstRowOffset,
                 fillReferences
-                , filterReferences);
+                , filterReferences, connection);
         }
 
         private const int CommandCacheMaxLength = 10;
@@ -1069,22 +1155,22 @@ namespace OpenNETCF.ORM
             }
         }
 
-        protected virtual TCommand GetSelectCommand<TCommand, TParameter>(string entityName, IEnumerable<FilterCondition> filters, out bool tableDirect)
+        protected virtual TCommand GetSelectCommand<TCommand, TParameter>(string entityName, IEnumerable<FilterCondition> filters, int rowOffset, int rowCount, out bool tableDirect)
             where TCommand : DbCommand, new()
             where TParameter : IDataParameter, new()
         {
             tableDirect = false;
-            return BuildFilterCommand<TCommand, TParameter>(entityName, filters);
+            return BuildFilterCommand<TCommand, TParameter>(entityName, filters, false, rowOffset, rowCount);
         }
 
         protected TCommand BuildFilterCommand<TCommand, TParameter>(string entityName, IEnumerable<FilterCondition> filters)
             where TCommand : DbCommand, new()
             where TParameter : IDataParameter, new()
         {
-            return BuildFilterCommand<TCommand, TParameter>(entityName, filters, false);
+            return BuildFilterCommand<TCommand, TParameter>(entityName, filters, false, 0, 0);
         }
 
-        protected TCommand BuildFilterCommand<TCommand, TParameter>(string entityName, IEnumerable<FilterCondition> filters, bool isCount)
+        protected virtual TCommand BuildFilterCommand<TCommand, TParameter>(string entityName, IEnumerable<FilterCondition> filters, bool isCount, int rowOffset, int rowCount)
             where TCommand : DbCommand, new()
             where TParameter : IDataParameter, new()
         {
@@ -1097,7 +1183,7 @@ namespace OpenNETCF.ORM
             if (isCount)
             {
                 FieldAttribute fa = (from FieldAttribute el in Entities[entityName].Fields
-                                    where el.IsPrimaryKey
+                                    where el.IsPrimaryKey || el.SearchOrder != FieldSearchOrder.NotSearchable
                                     select el).FirstOrDefault<FieldAttribute>();
                 if (fa == null)
                 {
@@ -1110,11 +1196,7 @@ namespace OpenNETCF.ORM
             }
             else
             {
-                foreach (FieldAttribute fa in Entities[entityName].Fields)
-                {
-                    sb.AppendFormat(" {0}.{1},", entityName, fa.FieldName);
-                }
-                sb.Remove(sb.Length - 1, 1);
+                sb.Append(BuildFieldsSQL(Entities[entityName], rowOffset, rowCount));
             }
             sb.AppendFormat(" FROM {0} ", entityName);
 
@@ -1125,70 +1207,22 @@ namespace OpenNETCF.ORM
                     sb.Append(i == 0 ? " WHERE " : String.Format(" {0} ",FieldAttribute.GetName(typeof(FilterCondition.LogicalOperator), (int)filters.ElementAt(i).WhereOperator)));
                     
                     var filter = filters.ElementAt(i);
-                    sb.Append("[" + filter.FieldName + "]");
 
                     string paramName = string.Format("@p{0}", i);
 
-                    switch (filters.ElementAt(i).Operator)
+                    string paramsql = BuildParameterSQL(paramName, filter);
+                    sb.Append(paramsql);
+                    // In the case of a IS NULL or so, we don't use the Param, no need to add it.
+                    if (paramsql.Contains(paramName))
                     {
-                        case FilterCondition.FilterOperator.Equals:
-                            if ((filter.Value == null) || (filter.Value == DBNull.Value))
-                            {
-                                sb.Append(" IS NULL ");
-                                continue;
-                            }
-                            sb.AppendFormat(" = {0}",paramName);
-                            break;
-                        case FilterCondition.FilterOperator.Like:
-                            sb.AppendFormat(" LIKE {0}", paramName);
-                            break;
-                        case FilterCondition.FilterOperator.LessThan:
-                            sb.AppendFormat(" < {0}", paramName);
-                            break;
-                        case FilterCondition.FilterOperator.GreaterThan:
-                            sb.AppendFormat(" > {0}", paramName);
-                            break;
-                        case FilterCondition.FilterOperator.LessThanOrEqual:
-                            sb.AppendFormat(" <= {0}", paramName);
-                            break;
-                        case FilterCondition.FilterOperator.GreaterThanOrEqual:
-                            sb.AppendFormat(" >= {0}", paramName);
-                            break;
-                        case FilterCondition.FilterOperator.In:
-                            if (filter.Value.GetType().IsArray)
-                            {
-                                // If we received an array as a parameter, we transform it to a String array
-                                // using the ToString() function of the object. This has the benefit that
-                                // we can give an array of custom objects and use their overriden ToString method.
-                                var arr = filter.Value as Array;
-                                String[] strarr = new String[arr.Length];
-                                for (int k = 0; k < arr.Length; k++) { strarr[k] = arr.GetValue(k).ToString(); }
-                                sb.AppendFormat(" IN ({0})", String.Join(",",strarr));
-                            }
-                            else
-                            {
-                                sb.AppendFormat(" IN ({0})", filter.Value.ToString());
-                            }
-                            break;
-                        case FilterCondition.FilterOperator.NotEquals:
-                            if ((filter.Value == null) || (filter.Value == DBNull.Value))
-                            {
-                                sb.Append(" IS NOT NULL ");
-                                continue;
-                            }
-                            sb.AppendFormat(" <> {0}", paramName);
-                            break;
-                        default:
-                            throw new NotSupportedException();
+                        var param = new TParameter()
+                        {
+                            ParameterName = paramName,
+                            Value = filter.Value ?? DBNull.Value
+                        };
+
+                        @params.Add(param);
                     }
-
-                    var param = new TParameter()
-                    {
-                        ParameterName = paramName,
-                        Value = filter.Value ?? DBNull.Value
-                    };
-
-                    @params.Add(param);
                 }
             }
             if (Entities[entityName].SortingFields.Count > 0)
@@ -1239,7 +1273,101 @@ namespace OpenNETCF.ORM
             return command;
         }
 
-        protected void CheckPrimaryKeyIndex(string entityName)
+        protected virtual String BuildParameterSQL(string paramName, FilterCondition filter)
+        {
+            var sb = new StringBuilder();
+            sb.Append("[" + filter.FieldName + "]");
+            switch (filter.Operator)
+            {
+                case FilterCondition.FilterOperator.Equals:
+                    if ((filter.Value == null) || (filter.Value == DBNull.Value))
+                        sb.Append(" IS NULL ");
+                    else
+                        sb.AppendFormat(" = {0}", paramName);
+                    break;
+                case FilterCondition.FilterOperator.Like:
+                    sb.AppendFormat(" LIKE {0}", paramName);
+                    break;
+                case FilterCondition.FilterOperator.LessThan:
+                    sb.AppendFormat(" < {0}", paramName);
+                    break;
+                case FilterCondition.FilterOperator.GreaterThan:
+                    sb.AppendFormat(" > {0}", paramName);
+                    break;
+                case FilterCondition.FilterOperator.LessThanOrEqual:
+                    sb.AppendFormat(" <= {0}", paramName);
+                    break;
+                case FilterCondition.FilterOperator.GreaterThanOrEqual:
+                    sb.AppendFormat(" >= {0}", paramName);
+                    break;
+                case FilterCondition.FilterOperator.In:
+                    if (filter.Value.GetType().IsArray)
+                    {
+                        // If we received an array as a parameter, we transform it to a String array
+                        // using the ToString() function of the object. This has the benefit that
+                        // we can give an array of custom objects and use their overriden ToString method.
+                        var arr = filter.Value as Array;
+                        String[] strarr = new String[arr.Length];
+                        for (int k = 0; k < arr.Length; k++) { strarr[k] = arr.GetValue(k).ToString(); }
+                        sb.AppendFormat(" IN ({0})", String.Join(",", strarr));
+                    }
+                    else
+                    {
+                        sb.AppendFormat(" IN ({0})", filter.Value.ToString());
+                    }
+                    break;
+                case FilterCondition.FilterOperator.NotEquals:
+                    if ((filter.Value == null) || (filter.Value == DBNull.Value))
+                        sb.Append(" IS NOT NULL ");
+                    else
+                        sb.AppendFormat(" <> {0}", paramName);
+                    break;
+                default:
+                    throw new NotSupportedException();
+            }
+            return sb.ToString();
+        }
+
+        protected virtual String BuildFieldsSQL(EntityInfo entity, int rowOffset, int rowCount)
+        {
+            var sb = new StringBuilder();
+            foreach (FieldAttribute fa in entity.Fields)
+            {
+                sb.AppendFormat(" {0}.{1},", entity.EntityName, fa.FieldName);
+            }
+            sb.Remove(sb.Length - 1, 1);
+            return sb.ToString();
+        }
+
+        protected virtual void CascadeUpdates(object item, string fieldName, object keyValue, EntityInfo entity, IDbConnection connection, IDbTransaction transaction)
+        {
+            if (keyValue == null && entity.Fields.KeyField != null)
+                keyValue = entity.Fields.KeyField.PropertyInfo.GetValue(item, null);
+
+            foreach (var reference in entity.References)
+            {
+                var itemList = reference.PropertyInfo.GetValue(item, null) as Array;
+                if (itemList != null)
+                {
+                    foreach (var refItem in itemList)
+                    {
+                        if (!this.Contains(refItem))
+                        {
+                            var foreignKey = refItem.GetType().GetProperty(reference.ReferenceField, BindingFlags.Instance | BindingFlags.Public);
+                            foreignKey.SetValue(refItem, keyValue, null);
+                            Insert(refItem, true, connection, transaction, true);
+                        }
+                        else
+                        {
+                            Update(refItem, true, fieldName, connection, transaction);
+                        }
+                    }
+                }
+            }
+
+        }
+
+        protected virtual void CheckPrimaryKeyIndex(string entityName)
         {
             if ((Entities[entityName] as SqlEntityInfo).PrimaryKeyIndexName != null) return;
             var name = GetPrimaryKeyIndexName(entityName);
@@ -1283,13 +1411,12 @@ namespace OpenNETCF.ORM
         /// <param name="instance"></param>
         public override void FillReferences(object instance)
         {
-            FillReferences(instance, null, null, false, false);
+            FillReferences(instance, null, null, false, false, null);
         }
-
         
         public override void FillReferences(object instance, bool filterReferences)
         {
-            FillReferences(instance, null, null, false,filterReferences);
+            FillReferences(instance, null, null, false,filterReferences, null);
         }
 
         protected void FlushReferenceTableCache()
@@ -1297,7 +1424,7 @@ namespace OpenNETCF.ORM
             m_referenceCache.Clear();
         }
 
-        protected void FillReferences(object instance, object keyValue, ReferenceAttribute[] fieldsToFill, bool cacheReferenceTable, bool filterReferences)
+        protected void FillReferences(object instance, object keyValue, ReferenceAttribute[] fieldsToFill, bool cacheReferenceTable, bool filterReferences, IDbConnection connection)
         {
             if (instance == null) return;
 
@@ -1340,7 +1467,7 @@ namespace OpenNETCF.ORM
 
                         if (!m_referenceCache.ContainsKey(reference.ReferenceEntityType))
                         {
-                            refData = Select(reference.ReferenceEntityType, null, null, -1, 0);
+                            refData = Select(reference.ReferenceEntityType, null, null, -1, 0, false, false, connection);
                             m_referenceCache.Add(reference.ReferenceEntityType, refData);
                         }
                         else
@@ -1352,14 +1479,14 @@ namespace OpenNETCF.ORM
                     {
                         if (!filterReferences || reference.ConditionField == null || reference.ConditionField.Length <= 0)
                         {
-                            refData = Select(reference.ReferenceEntityType, reference.ReferenceField, keyValue, -1, 0, true, filterReferences);
+                            refData = Select(reference.ReferenceEntityType, reference.ReferenceField, keyValue, -1, 0, true, filterReferences, connection);
                         }
                         else
                         {
                             var filters = new FilterCondition[2] {
                                   new FilterCondition(reference.ReferenceField, keyValue, FilterCondition.FilterOperator.Equals)
                                  ,new FilterCondition(reference.ConditionField, reference.ConditionValue, FilterCondition.FilterOperator.NotEquals)};
-                            refData = Select(reference.ReferenceEntityType, filters, -1, 0, true, filterReferences);
+                            refData = Select(reference.ReferenceEntityType, filters, -1, 0, true, filterReferences, connection);
                         }
                     }
 
@@ -1422,16 +1549,16 @@ namespace OpenNETCF.ORM
         /// Deletes all entity instances of the specified type from the DataStore
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        public override void Drop<T>()
+        public override void Drop<T>(bool cascade = false)
         {
-            Drop(typeof(T));
+            Drop(typeof(T), cascade);
         }
 
         /// <summary>
         /// Deletes all entity instances of the specified type from the DataStore
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        public override void Drop(System.Type entityType)
+        public override void Drop(System.Type entityType, bool cascade = false)
         {
             string entityName = m_entities.GetNameForType(entityType);
 
@@ -1440,13 +1567,16 @@ namespace OpenNETCF.ORM
                 throw new EntityNotFoundException(entityType);
             }
 
-            // TODO: handle cascade deletes?
+            // TODO: handle cascade drops?
             EntityInfo entity = m_entities[entityName];
 
             var connection = GetConnection(true);
             try
             {
-                Drop(connection, entity);
+                if (cascade)
+                    DropRecursive(connection, entity);
+                else if (TableExists(connection, entity))
+                    Drop(connection, entity);
             }
             finally
             {
@@ -1454,7 +1584,7 @@ namespace OpenNETCF.ORM
             }
         }
 
-        private void Drop(IDbConnection connection, EntityInfo entity)
+        protected void Drop(IDbConnection connection, EntityInfo entity)
         {
             using (var command = GetNewCommandObject())
             {
@@ -1464,50 +1594,169 @@ namespace OpenNETCF.ORM
             }
         }
 
-        /// <summary>
-        /// Deletes all entity instances of the specified type from the DataStore
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        public override void Delete<T>()
+        protected virtual void DropRecursive(IDbConnection connection, EntityInfo entity)
         {
-            Delete(typeof(T));
+            if (TableExists(connection, entity))
+            {
+                Drop(connection, entity);
+            }
+            if (entity.References.Count > 0)
+            {
+                foreach (var reference in entity.References)
+                {
+                    string entityName = this.m_entities.GetNameForType(reference.ReferenceEntityType);
+
+                    if (entityName == null)
+                    {
+                        throw new EntityNotFoundException(reference.ReferenceEntityType);
+                    }
+                    DropRecursive(connection, this.m_entities[entityName]);
+                }
+            }
         }
 
         /// <summary>
         /// Deletes all entity instances of the specified type from the DataStore
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        public override void Delete(System.Type entityType)
+        public override int Delete<T>(bool cascade = false)
         {
-            string entityName = m_entities.GetNameForType(entityType);
+            return Delete(typeof(T), cascade);
+        }
 
-            if (entityName == null)
-            {
-                throw new EntityNotFoundException(entityType);
-            }
-
-            // TODO: handle cascade deletes?
-
-            var connection = GetConnection(true);
+        /// <summary>
+        /// Deletes all entity instances of the specified type from the DataStore
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        public override int Delete(System.Type entityType, bool cascade = false)
+        {
+            int result = 0;
+            IDbConnection connection = GetConnection(true);
+            IDbTransaction transaction = null;
             try
             {
-                using (var command = GetNewCommandObject())
+                if (cascade)
                 {
-                    command.Connection = connection;
-                    command.CommandText = string.Format("DELETE FROM {0}", entityName);
-                    command.ExecuteNonQuery();
+                    transaction = connection.BeginTransaction();
+                    string entityName = m_entities.GetNameForType(entityType);
+                    foreach (var reference in Entities[entityName].References)
+                    {
+                        if (!reference.CascadeDelete) continue;
+                        result += Delete(reference.ReferenceEntityType, null, connection, transaction,cascade);
+                    }
                 }
+                result += DeleteFiltered(entityType, null, connection, transaction);
+                if (transaction != null) transaction.Commit();
+            }
+            catch (Exception ex)
+            {
+                if (transaction != null) transaction.Rollback();
+                throw ex;
             }
             finally
             {
+                DoneWithTransaction(transaction, true);
                 DoneWithConnection(connection, true);
             }
+            return result;
         }
 
 
-        public override void Delete<T>(string fieldName, object matchValue)
+        public override int Delete<T>(IEnumerable<FilterCondition> filters, bool cascade = false)
         {
-            Delete(typeof(T), fieldName, matchValue);
+            int result = 0;
+            IDbConnection connection = GetConnection(true);
+            IDbTransaction transaction = null;
+            try
+            {
+                if (cascade)
+                    transaction = connection.BeginTransaction();
+                result += Delete(typeof(T), filters, connection, transaction, cascade);
+                if (transaction != null) transaction.Commit();
+            }
+            catch (Exception ex)
+            {
+                if (transaction != null) transaction.Rollback();
+                throw ex;
+            }
+            finally
+            {
+                DoneWithTransaction(transaction, true);
+                DoneWithConnection(connection, true);
+            }
+            return result;
+        }
+
+        public override int Delete(System.Type entityType, IEnumerable<FilterCondition> filters, bool cascade = false)
+        {
+            int result = 0;
+            IDbConnection connection = GetConnection(true);
+            IDbTransaction transaction = null;
+            try
+            {
+                if (cascade)
+                    transaction = connection.BeginTransaction();
+                result += Delete(entityType, filters, connection, transaction, cascade);
+                if (transaction != null) transaction.Commit();
+            }
+            catch (Exception ex)
+            {
+                if (transaction != null) transaction.Rollback();
+                throw ex;
+            }
+            finally
+            {
+                DoneWithTransaction(transaction, true);
+                DoneWithConnection(connection, true);
+            }
+            return result;
+        }
+
+        protected virtual int Delete(Type entityType, IEnumerable<FilterCondition> filters, IDbConnection connection, IDbTransaction transaction, bool cascade = false)
+        {
+            //TODO : Handle cascade
+            int result = 0;
+            string entityName = m_entities.GetNameForType(entityType);
+            OnBeforeDelete(entityType, filters);
+            if (cascade && Entities[entityName].References.Count > 0)
+            {
+                if (Entities[entityName].Fields.KeyField == null)
+                {
+                    throw new PrimaryKeyRequiredException(String.Format("A primary key is required on an Entity in order to perform a cascade Delete ({0})", entityName));
+                }
+                if (Entities[entityName].Fields.KeyFields.Count > 1)
+                {
+                    throw new PrimaryKeyRequiredException(String.Format("Only one primary key is allowed on an Entity in order to perform a cascade Delete ({0})", entityName));
+                }
+                if (filters != null)
+                {
+                    var items = Select(entityType, filters, 0, 0, false, false, connection);
+                    var reffilters = new List<FilterCondition>();
+                    foreach (var item in items)
+                    {
+                        object primarykey = Entities[entityName].Fields.KeyField.PropertyInfo.GetValue(item, null);
+                        foreach (var reference in Entities[entityName].References)
+                        {
+                            reffilters.Clear();
+                            reffilters.Add(new FilterCondition(reference.ReferenceField,
+                                                                primarykey,
+                                                                FilterCondition.FilterOperator.Equals));
+                            if (!reference.CascadeDelete) continue;
+                            result += Delete(reference.ReferenceEntityType, reffilters, connection, transaction, cascade);
+                        }
+                    }
+                }
+                else
+                {
+                    foreach (var reference in Entities[entityName].References)
+                    {
+                        if (!reference.CascadeDelete) continue;
+                        result += Delete(reference.ReferenceEntityType, null, connection, transaction, cascade);
+                    }
+                }
+            }
+            result += DeleteFiltered(entityType, filters, connection, transaction);
+            return result;
         }
 
         /// <summary>
@@ -1516,59 +1765,40 @@ namespace OpenNETCF.ORM
         /// <param name="entityType"></param>
         /// <param name="indexName"></param>
         /// <param name="matchValue"></param>
-        protected void Delete(Type entityType, string fieldName, object matchValue)
+        protected int DeleteFiltered(Type entityType, IEnumerable<FilterCondition> filters, IDbConnection connection, IDbTransaction transaction)
         {
             string entityName = m_entities.GetNameForType(entityType);
-
-            var connection = GetConnection(true);
-            try
+            using (var command = GetNewCommandObject())
             {
-                using (var command = GetNewCommandObject())
+                command.Connection = connection;
+                if (transaction != null)
+                    command.Transaction = transaction;
+
+                var sb = new StringBuilder();
+                sb.AppendFormat("DELETE FROM {0} ", entityName);
+                if (filters != null)
                 {
-                    command.Connection = connection;
-                    command.CommandText = string.Format("DELETE FROM {0} WHERE {1} = {2}", entityName, fieldName, "@" + fieldName);
-                    var param = CreateParameterObject("@" + fieldName, matchValue);
-                    command.Parameters.Add(param);
-                    command.ExecuteNonQuery();
-                }
-            }
-            finally
-            {
-                DoneWithConnection(connection, true);
-            }
-        }
-
-        /// <summary>
-        /// Deletes entities of a given type where the specified field names match the specified values
-        /// </summary>
-        /// <param name="entityType"></param>
-        /// <param name="fieldNames"></param>
-        /// <param name="matchValues"></param>
-        protected void Delete(Type entityType, List<String> fieldNames, List<object> matchValues)
-        {
-            string entityName = m_entities.GetNameForType(entityType);
-
-            var connection = GetConnection(true);
-            try
-            {
-                using (var command = GetNewCommandObject())
-                {
-                    command.Connection = connection;
-                    String sql = string.Format("DELETE FROM {0} WHERE ", entityName);
-                    for (int i = 0; i < fieldNames.Count; i++)
+                    int iCount = 0;
+                    foreach (var filter in filters)
                     {
-                        if (i > 0) sql += " AND ";
-                        sql += fieldNames[i] + " = @" + fieldNames[i];
-                        var param = CreateParameterObject("@" + fieldNames[i], matchValues[i]);
-                        command.Parameters.Add(param);
+                        if (iCount == 0) sb.Append(" WHERE ");
+                        if (iCount > 1) sb.Append(filter.WhereOperator.ToString());
+                        string paramName = String.Format("@{0}", iCount);
+                        string paramSQL = BuildParameterSQL(paramName, filter);
+                        sb.Append(paramSQL);
+                        if (paramSQL.Contains(paramName))
+                        {
+                            var param = CreateParameterObject(paramName, filter.Value);
+                            command.Parameters.Add(param);
+                        }
+                        iCount++;
                     }
-                    command.CommandText = sql;
-                    command.ExecuteNonQuery();
                 }
-            }
-            finally
-            {
-                DoneWithConnection(connection, true);
+                command.CommandText = sb.ToString();
+                var start = DateTime.Now;
+                var result = command.ExecuteNonQuery();
+                OnAfterDelete(entityType, filters, DateTime.Now.Subtract(start), command.CommandText);
+                return result;
             }
         }
 
@@ -1579,8 +1809,9 @@ namespace OpenNETCF.ORM
         /// <remarks>
         /// The instance provided must have a valid primary key value
         /// </remarks>
-        public override void Delete(object item)
+        public override int Delete(object item, bool cascade = false)
         {
+            int result = 0;
             var type = item.GetType();
             string entityName = m_entities.GetNameForType(type);
 
@@ -1588,28 +1819,67 @@ namespace OpenNETCF.ORM
             {
                 throw new EntityNotFoundException(type);
             }
-
-            if (Entities[entityName].Fields.KeyField == null)
+            if (Entities[entityName].Fields.KeyField == null && cascade & Entities[entityName].References.Count > 0)
             {
-                throw new PrimaryKeyRequiredException("A primary key is required on an Entity in order to perform a Delete");
+                throw new PrimaryKeyRequiredException(String.Format("A primary key is required on an Entity in order to perform a cascade Delete ({0})", entityName));
             }
-
-            if (FieldAttributeCollection.AllowMultiplePrimaryKeyFields && Entities[entityName].Fields.KeyFields.Count > 1)
+            if (Entities[entityName].Fields.KeyFields.Count > 1 && cascade & Entities[entityName].References.Count > 0)
             {
-                List<String> keys = new List<String>();
-                List<object> values = new List<object>();
-                foreach (FieldAttribute field in Entities[entityName].Fields.KeyFields)
+                throw new PrimaryKeyRequiredException(String.Format("Only one primary key is allowed on an Entity in order to perform a cascade Delete ({0})", entityName));
+            }
+            //TODO: Handle cascade deletes
+
+            IDbConnection connection = GetConnection(true);
+            IDbTransaction transaction = null;
+            try
+            {
+                if (cascade & Entities[entityName].Fields.KeyFields.Count == 1)
                 {
-                    keys.Add(field.FieldName);
-                    values.Add(field.PropertyInfo.GetValue(item, null));
+                    transaction = connection.BeginTransaction();
+                    object primaryKey = Entities[entityName].Fields.KeyField.PropertyInfo.GetValue(item, null);
+                    foreach (var reference in Entities[entityName].References)
+                    {
+                        if (!reference.CascadeDelete) continue;
+                        var reffilters = new List<FilterCondition>();
+                        reffilters.Add(new FilterCondition(
+                            reference.ReferenceField,
+                            primaryKey,
+                            FilterCondition.FilterOperator.Equals));
+                        result += Delete(type, reffilters, connection, transaction, cascade);
+                    }
                 }
-                Delete(type, keys, values);
+
+                var filters = new List<FilterCondition>();
+                if (Entities[entityName].Fields.KeyFields == null || Entities[entityName].Fields.KeyFields.Count <= 0)
+                {
+                    foreach (var field in Entities[entityName].Fields)
+                    {
+                        var filter = new FilterCondition(field.FieldName, field.PropertyInfo.GetValue(item, null), FilterCondition.FilterOperator.Equals);
+                        filters.Add(filter);
+                    }
+                }
+                else
+                {
+                    foreach (var field in Entities[entityName].Fields.KeyFields)
+                    {
+                        var filter = new FilterCondition(field.FieldName, field.PropertyInfo.GetValue(item, null), FilterCondition.FilterOperator.Equals);
+                        filters.Add(filter);
+                    }
+                }
+                result += DeleteFiltered(type, filters, connection, transaction);
+                if (transaction != null) transaction.Commit();
             }
-            else
+            catch (Exception ex)
             {
-                var keyValue = Entities[entityName].Fields.KeyField.PropertyInfo.GetValue(item, null);
-                Delete(type, keyValue);
+                if (transaction != null) transaction.Rollback();
+                throw ex;
             }
+            finally
+            {
+                DoneWithTransaction(transaction, true);
+                DoneWithConnection(connection, true);
+            }
+            return result;
         }
 
         /// <summary>
@@ -1617,35 +1887,67 @@ namespace OpenNETCF.ORM
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="primaryKey"></param>
-        public override void Delete<T>(object primaryKey)
+        public override int Delete<T>(object primaryKey, bool cascade = false)
         {
-            Delete(typeof(T), primaryKey);
+            return Delete(typeof(T), primaryKey, cascade);
         }
 
-        protected virtual void Delete(Type t, object primaryKey)
+        public override int Delete(Type entityType, object primaryKey, bool cascade = false)
         {
-            string entityName = m_entities.GetNameForType(t);
+            int result = 0;
+            string entityName = m_entities.GetNameForType(entityType);
 
             if (entityName == null)
             {
-                throw new EntityNotFoundException(t);
+                throw new EntityNotFoundException(entityType);
             }
 
             if (Entities[entityName].Fields.KeyField == null)
             {
-                throw new PrimaryKeyRequiredException("A primary key is required on an Entity in order to perform a Delete");
+                throw new PrimaryKeyRequiredException(String.Format("A primary key is required on an Entity in order to perform a PK Delete ({0})", entityName));
             }
 
-            // handle cascade deletes
-            foreach (var reference in Entities[entityName].References)
+            //TODO: Add transactional delete
+            IDbConnection connection = GetConnection(true);
+            IDbTransaction transaction = null;
+            try
             {
-                if (!reference.CascadeDelete) continue;
+                if (cascade)
+                {
+                    transaction = connection.BeginTransaction();
+                    // handle cascade deletes
+                    foreach (var reference in Entities[entityName].References)
+                    {
+                        if (!reference.CascadeDelete) continue;
+                        var reffilters = new List<FilterCondition>();
+                        reffilters.Add(new FilterCondition(
+                            reference.ReferenceField,
+                            primaryKey,
+                            FilterCondition.FilterOperator.Equals));
+                        result += Delete(entityType, reffilters, connection, transaction, cascade);
+                    }
+                }
 
-                Delete(reference.ReferenceEntityType, reference.ReferenceField, primaryKey);
+                var keyFieldName = Entities[entityName].Fields.KeyField.FieldName;
+                var filters = new List<FilterCondition>();
+                filters.Add(new FilterCondition(
+                                keyFieldName,
+                                primaryKey,
+                                FilterCondition.FilterOperator.Equals));
+                result += DeleteFiltered(entityType, filters, connection, transaction);
+                if (transaction != null) transaction.Commit();
             }
-
-            var keyFieldName = Entities[entityName].Fields.KeyField.FieldName;
-            Delete(t, keyFieldName, primaryKey);
+            catch (Exception ex)
+            {
+                if (transaction != null) transaction.Rollback();
+                throw ex;
+            }
+            finally
+            {
+                DoneWithTransaction(transaction, true);
+                DoneWithConnection(connection, true);
+            }
+            return result;
         }
 
         /// <summary>
@@ -1656,20 +1958,28 @@ namespace OpenNETCF.ORM
         public override int Count<T>()
         {
             var t = typeof(T);
-            string entityName = m_entities.GetNameForType(t);
+            return Count(t);
+        }
+
+        public override int Count(Type entityType)
+        {
+            string entityName = m_entities.GetNameForType(entityType);
 
             if (entityName == null)
             {
-                throw new EntityNotFoundException(t);
+                throw new EntityNotFoundException(entityType);
             }
 
             var connection = GetConnection(true);
             try
             {
+                string field = "*";
+                if (Entities[entityName].Fields.KeyFields.Count == 1)
+                    field = Entities[entityName].Fields.KeyFields[0].FieldName;
                 using (var command = GetNewCommandObject())
                 {
                     command.Connection = connection;
-                    command.CommandText = string.Format("SELECT COUNT(*) FROM {0}", entityName);
+                    command.CommandText = string.Format("SELECT COUNT({0}) FROM {1}", field, entityName);
                     var count = command.ExecuteScalar();
                     return Convert.ToInt32(count);
                 }
@@ -1702,7 +2012,7 @@ namespace OpenNETCF.ORM
         public override T[] Fetch<T>(int fetchCount)
         {
             var type = typeof(T);
-            var items = Select(type, null, null, fetchCount, 0, false, false);
+            var items = Select(type, null, null, fetchCount, 0, false, false, null);
             return items.Cast<T>().ToArray();
         }
 
@@ -1716,8 +2026,24 @@ namespace OpenNETCF.ORM
         public override T[] Fetch<T>(int fetchCount, int firstRowOffset)
         {
             var type = typeof(T);
-            var items = Select(type, null, null, fetchCount, firstRowOffset, false, false);
+            var items = Select(type, null, null, fetchCount, firstRowOffset, false, false, null);
             return items.Cast<T>().ToArray();
         }
+
+        public override T[] Fetch<T>(int fetchCount, int firstRowOffset, string sortField, FieldSearchOrder sortOrder, FilterCondition filter, bool fillReferences)
+        {
+            return Fetch<T>(fetchCount, firstRowOffset, sortField, sortOrder, filter, fillReferences, false);
+        }
+        public abstract override T[] Fetch<T>(int fetchCount, int firstRowOffset, string sortField, FieldSearchOrder sortOrder, FilterCondition filter, bool fillReferences, bool filterReferences);
+
+        public override object[] Fetch(Type entityType, int fetchCount, int firstRowOffset, bool fillReferences)
+        {
+            return Select(entityType, null, null, fetchCount, firstRowOffset, fillReferences, false, null);
+        }
+        public override object[] Fetch(Type entityType, int fetchCount, int firstRowOffset, bool fillReferences, bool filterReferences)
+        {
+            return Select(entityType, null, null, fetchCount, firstRowOffset, fillReferences, filterReferences, null);
+        }
+        public abstract override object[] Fetch(Type entityType, int fetchCount, int firstRowOffset, string sortField, FieldSearchOrder sortOrder, FilterCondition filter, bool fillReferences, bool filterReferences);
     }
 }

@@ -18,7 +18,15 @@ namespace OpenNETCF.ORM
             KeyScheme = keyScheme;
         }
 
-        public string NameInStore { get; set; }
+        private string _nameInStore;
+        public string NameInStore {
+            get { return _nameInStore; }
+            set
+            {
+                if (!Extensions.MatchTableNamingConstraints(value)) throw new InvalidElementNameException(value);
+                _nameInStore = value;
+            }
+        }
         public KeyScheme KeyScheme { get; set; }
     }
 }

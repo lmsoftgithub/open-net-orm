@@ -16,167 +16,7 @@ namespace OpenNETCF.ORM
     public partial class FirebirdDataStore
     {
 
-        /// <summary>
-        /// Retrieves a single entity instance from the DataStore identified by the specified primary key value
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="primaryKey"></param>
-        /// <returns></returns>
-        public override T Select<T>(object primaryKey)
-        {
-            return Select<T>(primaryKey, false, false);
-        }
-
-        public override T Select<T>(object primaryKey, bool fillReferences)
-        {
-            return Select<T>(primaryKey, fillReferences, false);
-        }
-
-        public override T Select<T>(object primaryKey, bool fillReferences, bool filterReferences)
-        {
-            return (T)Select(typeof(T), null, primaryKey, -1, -1, fillReferences, false).FirstOrDefault();
-        }
-
-        /// <summary>
-        /// Retrieves all entity instances of the specified type from the DataStore
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <returns></returns>
-        public override T[] Select<T>()
-        {
-            var type = typeof(T);
-            var items = Select(type, null, null, -1, 0);
-            return items.Cast<T>().ToArray();
-        }
-
-        /// <summary>
-        /// Retrieves all entity instances of the specified type from the DataStore
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <returns></returns>
-        public override T[] Select<T>(bool fillReferences)
-        {
-            return Select<T>(fillReferences, false);
-        }
-
-        /// <summary>
-        /// Retrieves all entity instances of the specified type from the DataStore
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="fillReferences"></param>
-        /// <param name="filterReferences"></param>
-        /// <returns></returns>
-        public override T[] Select<T>(bool fillReferences, bool filterReferences)
-        {
-            var type = typeof(T);
-            var items = Select(type, null, null, -1, 0, fillReferences, filterReferences);
-            return items.Cast<T>().ToArray();
-        }
-
-        /// <summary>
-        /// Retrieves all entity instances of the specified type from the DataStore
-        /// </summary>
-        /// <param name="entityType"></param>
-        /// <returns></returns>
-        public override object[] Select(Type entityType)
-        {
-            return Select(entityType, true);
-        }
-
-        public override object[] Select(Type entityType, bool fillReferences)
-        {
-            return Select(entityType, fillReferences, false);
-        }
-
-        public override object[] Select(Type entityType, bool fillReferences, bool filterReferences)
-        {
-            var items = Select(entityType, null, null, -1, 0, fillReferences, filterReferences);
-            return items.ToArray();
-        }
-
-        public override T[] Select<T>(string searchFieldName, object matchValue)
-        {
-            return Select<T>(searchFieldName, matchValue, true);
-        }
-
-        public override T[] Select<T>(string searchFieldName, object matchValue, bool fillReferences)
-        {
-            return Select<T>(searchFieldName, matchValue, fillReferences, false);
-        }
-
-        public override T[] Select<T>(string searchFieldName, object matchValue, bool fillReferences, bool filterReferences)
-        {
-            var type = typeof(T);
-            var items = Select(type, searchFieldName, matchValue, -1, 0, fillReferences, filterReferences);
-            return items.Cast<T>().ToArray();
-        }
-
-        public override T[] Select<T>(IEnumerable<FilterCondition> filters)
-        {
-            return Select<T>(filters, true);
-        }
-
-        public override T[] Select<T>(IEnumerable<FilterCondition> filters, bool fillReferences)
-        {
-            return Select<T>(filters, fillReferences, false);
-        }
-
-        public override T[] Select<T>(IEnumerable<FilterCondition> filters, bool fillReferences, bool filterReferences)
-        {
-            var objectType = typeof(T);
-            return Select(objectType, filters, -1, 0, fillReferences, filterReferences).Cast<T>().ToArray();
-        }
-
-        private object[] Select(Type objectType, string searchFieldName, object matchValue, int fetchCount, int firstRowOffset)
-        {
-            return Select(objectType, searchFieldName, matchValue, fetchCount, firstRowOffset, true, false);
-        }
-
-        protected virtual object[] Select(Type objectType, string searchFieldName, object matchValue, int fetchCount, int firstRowOffset, bool fillReferences, bool filterReferences)
-        {
-            string entityName = m_entities.GetNameForType(objectType);
-            FilterCondition filter = null;
-
-            if (searchFieldName == null)
-            {
-                if (matchValue != null)
-                {
-                    CheckPrimaryKeyIndex(entityName);
-
-                    // searching on primary key
-                    filter = new SqlFilterCondition
-                    {
-                        FieldName = (Entities[entityName] as FbEntityInfo).Fields.KeyField.FieldName,
-                        Operator = FilterCondition.FilterOperator.Equals,
-                        Value = matchValue,
-                        PrimaryKey = true
-                    };
-                }
-            }
-            else
-            {
-                filter = new FilterCondition
-                {
-                    FieldName = searchFieldName,
-                    Operator = FilterCondition.FilterOperator.Equals,
-                    Value = matchValue
-                };
-            }
-
-            return Select(
-                objectType,
-                (filter == null) ? null :
-                    new FilterCondition[]
-                    {
-                        filter
-                    },
-                fetchCount,
-                firstRowOffset,
-                fillReferences
-                , filterReferences);
-        }
-
-        protected object[] Select(Type objectType, IEnumerable<FilterCondition> filters, int fetchCount, int firstRowOffset, bool fillReferences, bool filterReferences)
+        protected override object[] Select(Type objectType, IEnumerable<FilterCondition> filters, int fetchCount, int firstRowOffset, bool fillReferences, bool filterReferences, IDbConnection connection)
         {
             string entityName = m_entities.GetNameForType(objectType);
 
@@ -190,7 +30,7 @@ namespace OpenNETCF.ORM
             var items = new List<object>();
             bool tableDirect;
 
-            var connection = GetConnection(false);
+            if (connection == null) connection = GetConnection(false);
             FbCommand command = null;
 
             if (UseCommandCache)
@@ -201,7 +41,7 @@ namespace OpenNETCF.ORM
             try
             {
                 CheckOrdinals(entityName);
-                command = GetSelectCommand<FbCommand, FbParameter>(entityName, filters, out tableDirect);
+                command = GetSelectCommand<FbCommand, FbParameter>(entityName, filters, firstRowOffset, fetchCount, out tableDirect);
                 command.Connection = connection as FbConnection;
 
                 int searchOrdinal = -1;
@@ -307,7 +147,7 @@ namespace OpenNETCF.ORM
                             if ((fillReferences) && (referenceFields.Length > 0))
                             {
                                 //FillReferences(item, rowPK, referenceFields, true);
-                                FillReferences(item, rowPK, referenceFields, false, filterReferences);
+                                FillReferences(item, rowPK, referenceFields, false, filterReferences, connection);
                             }
 
                             items.Add(item);

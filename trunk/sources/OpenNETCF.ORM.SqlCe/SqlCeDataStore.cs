@@ -22,10 +22,19 @@ namespace OpenNETCF.ORM
 
         public string FileName { get; protected set; }
 
+        public override string Name
+        {
+            get
+            {
+                return FileName;
+            }
+        }
+
         protected SqlCeDataStore()
             : base()
         {
             UseCommandCache = true;
+            ConnectionBehavior = ConnectionBehavior.Persistent;
         }
 
         public SqlCeDataStore(string fileName)
@@ -148,7 +157,7 @@ namespace OpenNETCF.ORM
             var connection = GetConnection(true);
             try
             {
-                using (var command = BuildFilterCommand<SqlCeCommand, SqlCeParameter>(entityName, filters, true))
+                using (var command = BuildFilterCommand<SqlCeCommand, SqlCeParameter>(entityName, filters, true, 0, 0))
                 {
                     command.Connection = connection as SqlCeConnection;
                     return (int)command.ExecuteScalar();

@@ -16,7 +16,7 @@ namespace OpenNETCF.ORM
     partial class MSSqlDataStore
     {
 
-        protected override void BulkInsert(object items, bool insertReferences, IDbTransaction transaction)
+        protected override void BulkInsert(object items, bool insertReferences, IDbConnection connection, IDbTransaction transaction)
         {
             if (items != null)
             {
@@ -24,20 +24,20 @@ namespace OpenNETCF.ORM
                 {
                     foreach (var item in items as Array)
                     {
-                        Insert(item, insertReferences, transaction, false);
+                        Insert(item, insertReferences, connection, transaction, false);
                     }
                 }
                 else if (items is System.Collections.IEnumerable)
                 {
                     foreach (var item in items as System.Collections.IEnumerable)
                     {
-                        Insert(item, insertReferences, transaction, false);
+                        Insert(item, insertReferences, connection, transaction, false);
                     }
                 }
             }
         }
 
-        protected override void BulkInsertOrUpdate(object items, bool insertReferences, IDbTransaction transaction)
+        protected override void BulkInsertOrUpdate(object items, bool insertReferences, IDbConnection connection, IDbTransaction transaction)
         {
             if (items != null)
             {
@@ -45,20 +45,20 @@ namespace OpenNETCF.ORM
                 {
                     foreach (var item in items as Array)
                     {
-                        InsertOrUpdate(item, insertReferences, transaction);
+                        InsertOrUpdate(item, insertReferences, connection, transaction);
                     }
                 }
                 else if (items is System.Collections.IEnumerable)
                 {
                     foreach (var item in items as System.Collections.IEnumerable)
                     {
-                        InsertOrUpdate(item, insertReferences, transaction);
+                        InsertOrUpdate(item, insertReferences, connection, transaction);
                     }
                 }
             }
         }
 
-        protected override void Insert(object item, bool insertReferences, IDbTransaction transaction, bool checkUpdates)
+        protected override void Insert(object item, bool insertReferences, IDbConnection connection, IDbTransaction transaction, bool checkUpdates)
         {
             var itemType = item.GetType();
             string entityName = m_entities.GetNameForType(itemType);
@@ -68,11 +68,14 @@ namespace OpenNETCF.ORM
                 throw new EntityNotFoundException(item.GetType());
             }
 
-            IDbConnection connection = null;
             if (transaction == null && connection == null) connection = GetConnection(false);
             try
             {
                 // CheckOrdinals(entityName);
+
+                OnBeforeInsert(item, insertReferences);
+                var start = DateTime.Now;
+
                 FieldAttribute identity = null;
                 var command = GetInsertCommand(entityName);
                 if (transaction == null)
@@ -181,12 +184,14 @@ namespace OpenNETCF.ORM
                             }
                             Entities[et].Fields[reference.ReferenceField].PropertyInfo.SetValue(element, fk, null);
                             if (checkUpdates)
-                                this.InsertOrUpdate(element, insertReferences, transaction);
+                                this.InsertOrUpdate(element, insertReferences, connection, transaction);
                             else
-                                this.Insert(element, insertReferences, transaction, false);
+                                this.Insert(element, insertReferences, connection, transaction, false);
                         }
                     }
                 }
+                OnAfterInsert(item, insertReferences, DateTime.Now.Subtract(start), command.CommandText);
+                command.Dispose();
             }
             finally
             {

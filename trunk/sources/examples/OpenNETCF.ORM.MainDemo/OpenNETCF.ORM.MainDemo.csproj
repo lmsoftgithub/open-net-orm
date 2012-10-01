@@ -32,9 +32,30 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisIgnoreBuiltInRuleSets>false</CodeAnalysisIgnoreBuiltInRuleSets>
+    <CodeAnalysisIgnoreBuiltInRules>false</CodeAnalysisIgnoreBuiltInRules>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisIgnoreBuiltInRuleSets>false</CodeAnalysisIgnoreBuiltInRuleSets>
+    <CodeAnalysisIgnoreBuiltInRules>false</CodeAnalysisIgnoreBuiltInRules>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Data.SqlServerCe, Version=3.5.1.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="System.Data" />
@@ -44,6 +65,24 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Common\DatabaseStructure.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Common\DatabaseStructure.Designer.cs">
+      <DependentUpon>DatabaseStructure.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Common\DatabaseStructureConfigs.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Common\DatabaseStructureConfigs.Designer.cs">
+      <DependentUpon>DatabaseStructureConfigs.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Common\DatabaseTests.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Common\DatabaseTests.Designer.cs">
+      <DependentUpon>DatabaseTests.cs</DependentUpon>
+    </Compile>
     <Compile Include="FireBird\frmMainFirebird.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -56,6 +95,7 @@
     <Compile Include="frmMain.Designer.cs">
       <DependentUpon>frmMain.cs</DependentUpon>
     </Compile>
+    <Compile Include="Logger.cs" />
     <Compile Include="MSSQL\frmMainMSSQL.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -76,6 +116,15 @@
     <Compile Include="SQLite\frmMainSQLite.Designer.cs">
       <DependentUpon>frmMainSQLite.cs</DependentUpon>
     </Compile>
+    <EmbeddedResource Include="Common\DatabaseStructure.resx">
+      <DependentUpon>DatabaseStructure.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Common\DatabaseStructureConfigs.resx">
+      <DependentUpon>DatabaseStructureConfigs.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Common\DatabaseTests.resx">
+      <DependentUpon>DatabaseTests.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="frmMain.resx">
       <DependentUpon>frmMain.cs</DependentUpon>
     </EmbeddedResource>
@@ -88,6 +137,9 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <EmbeddedResource Include="SqlCe\frmMainSqlCe.resx">
+      <DependentUpon>frmMainSqlCe.cs</DependentUpon>
+    </EmbeddedResource>
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
@@ -98,7 +150,32 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <ProjectReference Include="..\..\OpenNETCF.ORM.Firebird\OpenNETCF.ORM.Firebird.FFx.csproj">
+      <Project>{5F5FB4F7-9ED1-4AFE-AA4E-9E4F83EA261E}</Project>
+      <Name>OpenNETCF.ORM.Firebird.FFx</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\OpenNETCF.ORM.MSSQL\OpenNETCF.ORM.MSSQL.FFx.csproj">
+      <Project>{4C07A875-090F-4F4D-A24A-0946670F8660}</Project>
+      <Name>OpenNETCF.ORM.MSSQL.FFx</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\OpenNETCF.ORM.SqlCe\OpenNETCF.ORM.SqlCe.FFx.csproj">
+      <Project>{B63F2DF8-E247-402D-A250-2514EF4A08FD}</Project>
+      <Name>OpenNETCF.ORM.SqlCe.FFx</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\OpenNETCF.ORM.SQLite\OpenNETCF.ORM.SQLite.FFx.csproj">
+      <Project>{750ED0AF-FE89-4EFC-BF7A-C29CBDD8AA7F}</Project>
+      <Name>OpenNETCF.ORM.SQLite.FFx</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\OpenNETCF.ORM\OpenNETCF.ORM.FFx.csproj">
+      <Project>{6E9C7DA3-AD60-4E44-9D3A-7BBD3A20D79F}</Project>
+      <Name>OpenNETCF.ORM.FFx</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\OpenNETCF.ORM.Model\OpenNETCF.ORM.Model.csproj">
+      <Project>{9562E48C-C224-470C-936A-12A9C40D615C}</Project>
+      <Name>OpenNETCF.ORM.Model</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

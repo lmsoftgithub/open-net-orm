@@ -162,7 +162,7 @@ namespace OpenNETCF.ORM.SQLite
         /// <remarks>
         /// If the entity has an identity field, calling Insert will populate that field with the identity vale vefore returning
         /// </remarks>
-        protected override void Insert(object item, bool insertReferences, IDbTransaction transaction, bool checkUpdates)
+        protected override void Insert(object item, bool insertReferences, IDbConnection connection, IDbTransaction transaction, bool checkUpdates)
         {
             var itemType = item.GetType();
             string entityName = m_entities.GetNameForType(itemType);
@@ -172,12 +172,14 @@ namespace OpenNETCF.ORM.SQLite
                 throw new EntityNotFoundException(item.GetType());
             }
 
-            IDbConnection connection = null;
-            if (transaction == null)
+            if (transaction == null && connection == null)
                 connection = GetConnection(false);
             try
             {
                 //                CheckOrdinals(entityName);
+
+                OnBeforeInsert(item, insertReferences);
+                var start = DateTime.Now;
 
                 FieldAttribute identity = null;
                 var command = GetInsertCommand(entityName);
@@ -284,12 +286,14 @@ namespace OpenNETCF.ORM.SQLite
                             // Added - 2012.08.08 - Added for robustness in updates
                             Entities[et].Fields[reference.ReferenceField].PropertyInfo.SetValue(element, fk, null);
                             if (checkUpdates)
-                                this.InsertOrUpdate(element, insertReferences, transaction);
+                                this.InsertOrUpdate(element, insertReferences, connection, transaction);
                             else
-                                this.Insert(element, insertReferences, transaction, false);
+                                this.Insert(element, insertReferences, connection, transaction, false);
                         }
                     }
                 }
+                OnAfterInsert(item, insertReferences, DateTime.Now.Subtract(start), command.CommandText);
+                command.Dispose();
             }
             finally
             {
@@ -297,12 +301,12 @@ namespace OpenNETCF.ORM.SQLite
             }
         }
 
-        protected override void BulkInsert(object items, bool insertReferences, IDbTransaction transaction)
+        protected override void BulkInsert(object items, bool insertReferences, IDbConnection connection, IDbTransaction transaction)
         {
             throw new NotImplementedException();
         }
 
-        protected override void BulkInsertOrUpdate(object items, bool insertReferences, IDbTransaction transaction)
+        protected override void BulkInsertOrUpdate(object items, bool insertReferences, IDbConnection connection, IDbTransaction transaction)
         {
             throw new NotImplementedException();
         }
@@ -394,7 +398,7 @@ namespace OpenNETCF.ORM.SQLite
             }
         }
 
-        protected override object[] Select(Type objectType, IEnumerable<FilterCondition> filters, int fetchCount, int firstRowOffset, bool fillReferences, bool filterReferences)
+        protected override object[] Select(Type objectType, IEnumerable<FilterCondition> filters, int fetchCount, int firstRowOffset, bool fillReferences, bool filterReferences, IDbConnection connection)
         {
             string entityName = m_entities.GetNameForType(objectType);
 
@@ -407,14 +411,18 @@ namespace OpenNETCF.ORM.SQLite
 
             var items = new List<object>();
 
-            var connection = GetConnection(false);
+            if (connection == null) connection = GetConnection(false);
             SQLiteCommand command = null;
 
             try
             {
                 CheckOrdinals(entityName);
+
+                OnBeforeSelect(m_entities[entityName], filters, fillReferences);
+                var start = DateTime.Now;
+
                 bool tableDirect;
-                command = GetSelectCommand<SQLiteCommand, SQLiteParameter>(entityName, filters, out tableDirect);
+                command = GetSelectCommand<SQLiteCommand, SQLiteParameter>(entityName, filters, firstRowOffset, fetchCount, out tableDirect);
                 command.Connection = connection as SQLiteConnection;
 
                 int searchOrdinal = -1;
@@ -529,7 +537,7 @@ namespace OpenNETCF.ORM.SQLite
                             if ((fillReferences) && (referenceFields.Length > 0))
                             {
                                 //FillReferences(item, rowPK, referenceFields, true);
-                                FillReferences(item, rowPK, referenceFields, false, filterReferences);
+                                FillReferences(item, rowPK, referenceFields, false, filterReferences, connection);
                             }
 
                             items.Add(item);
@@ -541,6 +549,7 @@ namespace OpenNETCF.ORM.SQLite
                         }
                     }
                 }
+                OnAfterSelect(m_entities[entityName], filters, fillReferences, DateTime.Now.Subtract(start), command.CommandText);
             }
             finally
             {
@@ -568,10 +577,10 @@ namespace OpenNETCF.ORM.SQLite
 
         public override void Update(object item, bool cascadeUpdates, string fieldName)
         {
-            Update(item, cascadeUpdates, fieldName, null);
+            Update(item, cascadeUpdates, fieldName, null, null);
         }
 
-        protected override void Update(object item, bool cascadeUpdates, string fieldName, IDbTransaction transaction)
+        protected override void Update(object item, bool cascadeUpdates, string fieldName, IDbConnection connection, IDbTransaction transaction)
         {
             object keyValue;
             var changeDetected = false;
@@ -588,13 +597,15 @@ namespace OpenNETCF.ORM.SQLite
                 throw new PrimaryKeyRequiredException("A primary key is required on an Entity in order to perform Updates");
             }
 
-            IDbConnection connection = null;
-            if (transaction == null)
+            if (transaction == null && connection == null)
                 connection = GetConnection(false);
             try
             {
                 CheckOrdinals(entityName);
                 CheckPrimaryKeyIndex(entityName);
+
+                OnBeforeUpdate(item, cascadeUpdates, fieldName);
+                var start = DateTime.Now;
 
                 using (var command = GetNewCommandObject())
                 {
@@ -717,36 +728,22 @@ namespace OpenNETCF.ORM.SQLite
                             }
                         }
                     }
+
+                    if (cascadeUpdates)
+                    {
+                        CascadeUpdates(item, fieldName, keyValue, m_entities[entityName], connection, transaction);
+                    }
+
+                    if (changeDetected)
+                        OnAfterUpdate(item, cascadeUpdates, fieldName, DateTime.Now.Subtract(start), updateSQL.ToString());
+                    else
+                        OnAfterUpdate(item, cascadeUpdates, fieldName, DateTime.Now.Subtract(start), null);
+
                 }
             }
             finally
             {
                 DoneWithConnection(connection, false);
-            }
-
-            if (cascadeUpdates)
-            {
-                // TODO: move this into the base DataStore class as it's not SqlCe-specific
-                foreach (var reference in Entities[entityName].References)
-                {
-                    var itemList = reference.PropertyInfo.GetValue(item, null) as Array;
-                    if (itemList != null)
-                    {
-                        foreach (var refItem in itemList)
-                        {
-                            var foreignKey = refItem.GetType().GetProperty(reference.ReferenceField, BindingFlags.Instance | BindingFlags.Public);
-                            foreignKey.SetValue(refItem, keyValue, null);
-                            if (!this.Contains(refItem))
-                            {
-                                Insert(refItem, cascadeUpdates, transaction, true);
-                            }
-                            else
-                            {
-                                Update(refItem, true, fieldName, transaction);
-                            }
-                        }
-                    }
-                }
             }
         }
 
@@ -763,7 +760,7 @@ namespace OpenNETCF.ORM.SQLite
             var connection = GetConnection(true);
             try
             {
-                using (var command = BuildFilterCommand<SQLiteCommand, SQLiteParameter>(entityName, filters, true))
+                using (var command = BuildFilterCommand<SQLiteCommand, SQLiteParameter>(entityName, filters, true, 0, 0))
                 {
                     command.Connection = connection as SQLiteConnection;
                     return (int)command.ExecuteScalar();
@@ -781,6 +778,11 @@ namespace OpenNETCF.ORM.SQLite
         }
 
         public override T[] Fetch<T>(int fetchCount, int firstRowOffset, string sortField, FieldSearchOrder sortOrder, FilterCondition filter, bool fillReferences, bool filterReferences)
+        {
+            throw new NotSupportedException("Fetch is not currently supported with this Provider.");
+        }
+
+        public override object[] Fetch(Type entityType, int fetchCount, int firstRowOffset, string sortField, FieldSearchOrder sortOrder, FilterCondition filter, bool fillReferences, bool filterReferences)
         {
             throw new NotSupportedException("Fetch is not currently supported with this Provider.");
         }

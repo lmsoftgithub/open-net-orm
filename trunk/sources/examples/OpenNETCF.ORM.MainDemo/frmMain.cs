@@ -14,6 +14,12 @@ namespace OpenNETCF.ORM.MainDemo
         public frmMain()
         {
             InitializeComponent();
+            InitializeObjects();
+        }
+
+        private void InitializeObjects()
+        {
+
         }
 
         private void btnSqlCeDemo_Click(object sender, EventArgs e)

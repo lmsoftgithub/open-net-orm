@@ -10,7 +10,7 @@ namespace OpenNETCF.ORM
 {
     partial class SqlCeDataStore
     {
-        protected override void Update(object item, bool cascadeUpdates, string fieldName, IDbTransaction transaction)
+        protected override void Update(object item, bool cascadeUpdates, string fieldName, IDbConnection connection, IDbTransaction transaction)
         {
             object keyValue;
             var itemType = item.GetType();
@@ -26,13 +26,15 @@ namespace OpenNETCF.ORM
                 throw new PrimaryKeyRequiredException("A primary key is required on an Entity in order to perform Updates");
             }
 
-            IDbConnection connection = null;
-            if (transaction == null)
+            if (transaction == null && connection == null)
                 connection = GetConnection(false);
             try
             {
                 CheckOrdinals(entityName);
                 CheckPrimaryKeyIndex(entityName);
+
+                OnBeforeUpdate(item, cascadeUpdates, fieldName);
+                var start = DateTime.Now;
 
                 using (var command = new SqlCeCommand())
                 {
@@ -40,10 +42,10 @@ namespace OpenNETCF.ORM
                         command.Connection = connection as SqlCeConnection;
                     else
                         command.Transaction = transaction as SqlCeTransaction;
+                    // TODO: Update doesn't support multiple Primary Keys. Need to be checked before we use TableDirect.
                     command.CommandText = entityName;
                     command.CommandType = CommandType.TableDirect;
                     command.IndexName = Entities[entityName].PrimaryKeyIndexName;
-
                     using (var results = command.ExecuteResultSet(ResultSetOptions.Scrollable | ResultSetOptions.Updatable))
                     {
                         keyValue = Entities[entityName].Fields.KeyField.PropertyInfo.GetValue(item, null);
@@ -111,39 +113,18 @@ namespace OpenNETCF.ORM
                                 results.SetValue(field.Ordinal, value);
                             }
                         }
-
                         results.Update();
                     }
                 }
+                if (cascadeUpdates)
+                {
+                    CascadeUpdates(item, fieldName, keyValue, m_entities[entityName], connection, transaction);
+                }
+                OnAfterUpdate(item, cascadeUpdates, fieldName, DateTime.Now.Subtract(start), "tableDirect");
             }
             finally
             {
                 DoneWithConnection(connection, false);
-            }
-
-            if (cascadeUpdates)
-            {
-                // TODO: move this into the base DataStore class as it's not SqlCe-specific
-                foreach (var reference in Entities[entityName].References)
-                {
-                    var itemList = reference.PropertyInfo.GetValue(item, null) as Array;
-                    if (itemList != null)
-                    {
-                        foreach (var refItem in itemList)
-                        {
-                            if (!this.Contains(refItem))
-                            {
-                                var foreignKey = refItem.GetType().GetProperty(reference.ReferenceField, BindingFlags.Instance | BindingFlags.Public);
-                                foreignKey.SetValue(refItem, keyValue, null);
-                                Insert(refItem, true, transaction, true);
-                            }
-                            else
-                            {
-                                Update(refItem, true, fieldName, transaction);
-                            }
-                        }
-                    }
-                }
             }
         }
     }

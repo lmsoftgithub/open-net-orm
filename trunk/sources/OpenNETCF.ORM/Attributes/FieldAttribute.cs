@@ -25,7 +25,15 @@ namespace OpenNETCF.ORM
             SortSequence = 0;
         }
 
-        public string FieldName { get; set; }
+        private string _fieldName;
+        public string FieldName {
+            get { return _fieldName; }
+            set
+            {
+                if (!Extensions.MatchFieldNamingConstraints(value)) throw new InvalidElementNameException(value);
+                _fieldName = value;
+            }
+        }
         public int Length { get; set; }
         public int Precision { get; set; }
         public int Scale { get; set; }
@@ -38,6 +46,7 @@ namespace OpenNETCF.ORM
         public String Default { get; set; }
         public FieldSearchOrder SortOrder { get; set; }
         public int SortSequence { get; set; }
+        public string IndexName { get; set; }
 
         /// <summary>
         /// rowversion or timestamp time for Sql Server
