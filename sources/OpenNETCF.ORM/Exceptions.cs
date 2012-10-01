@@ -116,4 +116,16 @@ namespace OpenNETCF.ORM
             EntityName = entityName;
         }
     }
+
+    public class InvalidElementNameException : Exception
+    {
+        public string ElementName { get; private set; }
+
+        public InvalidElementNameException(string elementName)
+            : base(String.Format("The element name doesn't match the constraints: {0} (it's too long or contains invalid characters)", elementName))
+        {
+            ElementName = elementName;
+        }
+    }
+
 }

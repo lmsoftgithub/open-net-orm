@@ -51,7 +51,7 @@ namespace OpenNETCF.ORM
             }
         }
 
-        protected override object[] Select(Type objectType, IEnumerable<FilterCondition> filters, int fetchCount, int firstRowOffset, bool fillReferences, bool filterReferences)
+        protected override object[] Select(Type objectType, IEnumerable<FilterCondition> filters, int fetchCount, int firstRowOffset, bool fillReferences, bool filterReferences, IDbConnection connection)
         {
             string entityName = m_entities.GetNameForType(objectType);
 
@@ -65,7 +65,7 @@ namespace OpenNETCF.ORM
             var items = new List<object>();
             bool tableDirect;
 
-            var connection = GetConnection(false);
+            if (connection == null) connection = GetConnection(false);
             SqlCommand command = null;
 
             if (UseCommandCache)
@@ -76,7 +76,11 @@ namespace OpenNETCF.ORM
             try
             {
                 CheckOrdinals(entityName);
-                command = GetSelectCommand<SqlCommand, SqlParameter>(entityName, filters, out tableDirect);
+
+                OnBeforeSelect(m_entities[entityName], filters, fillReferences);
+                var start = DateTime.Now;
+
+                command = GetSelectCommand<SqlCommand, SqlParameter>(entityName, filters, firstRowOffset, fetchCount, out tableDirect);
                 command.Connection = connection as SqlConnection;
 
                 int searchOrdinal = -1;
@@ -181,8 +185,7 @@ namespace OpenNETCF.ORM
 
                             if ((fillReferences) && (referenceFields.Length > 0))
                             {
-                                //FillReferences(item, rowPK, referenceFields, true);
-                                FillReferences(item, rowPK, referenceFields, false, filterReferences);
+                                FillReferences(item, rowPK, referenceFields, false, filterReferences, connection);
                             }
 
                             items.Add(item);
@@ -194,6 +197,7 @@ namespace OpenNETCF.ORM
                         }
                     }
                 }
+                OnAfterSelect(m_entities[entityName], filters, fillReferences, DateTime.Now.Subtract(start), command.CommandText);
             }
             finally
             {

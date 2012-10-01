@@ -11,7 +11,7 @@ namespace OpenNETCF.ORM
 {
     partial class SqlCeDataStore
     {
-        protected override TCommand GetSelectCommand<TCommand, TParameter>(string entityName, IEnumerable<FilterCondition> filters, out bool tableDirect)
+        protected override TCommand GetSelectCommand<TCommand, TParameter>(string entityName, IEnumerable<FilterCondition> filters, int rowOffset, int rowCount, out bool tableDirect)
         {
             tableDirect = true;
             var buildFilter = false;
@@ -43,7 +43,7 @@ namespace OpenNETCF.ORM
                                     field.SearchOrder == FieldSearchOrder.Descending ? "DESC" : "ASC");
 
                                 // build the index if it's not there
-                                VerifyIndex(entityName, filter.FieldName, field.SearchOrder, null);
+                                field.IndexName = VerifyIndex(entityName, filter.FieldName, field.SearchOrder, null);
                             }
                         }
                     }
@@ -62,7 +62,7 @@ namespace OpenNETCF.ORM
             if (buildFilter)
             {
                 tableDirect = false;
-                return BuildFilterCommand<TCommand, TParameter>(entityName, filters);
+                return BuildFilterCommand<TCommand, TParameter>(entityName, filters, false, rowOffset, rowCount);
             }
 
             return new SqlCeCommand()
@@ -103,7 +103,7 @@ namespace OpenNETCF.ORM
             }
         }
         
-        protected override object[] Select(Type objectType, IEnumerable<FilterCondition> filters, int fetchCount, int firstRowOffset, bool fillReferences, bool filterReferences)
+        protected override object[] Select(Type objectType, IEnumerable<FilterCondition> filters, int fetchCount, int firstRowOffset, bool fillReferences, bool filterReferences, IDbConnection connection)
         {
             string entityName = m_entities.GetNameForType(objectType);
 
@@ -114,10 +114,13 @@ namespace OpenNETCF.ORM
 
             UpdateIndexCacheForType(entityName);
 
+            //var genType = typeof(List<>).MakeGenericType(objectType);
+            //var items = (System.Collections.IList)Activator.CreateInstance(genType);
+
             var items = new List<object>();
             bool tableDirect;
 
-            var connection = GetConnection(false);
+            if (connection == null) connection = GetConnection(false);
             SqlCeCommand command = null;
 
             if (UseCommandCache)
@@ -127,14 +130,19 @@ namespace OpenNETCF.ORM
 
             try
             {
+                SqlEntityInfo entity = m_entities[entityName];
+
                 CheckOrdinals(entityName);
                 CheckPrimaryKeyIndex(entityName);
 
-                command = GetSelectCommand<SqlCeCommand, SqlCeParameter>(entityName, filters, out tableDirect);
+                OnBeforeSelect(entity, filters, fillReferences);
+                var start = DateTime.Now;
+
+                command = GetSelectCommand<SqlCeCommand, SqlCeParameter>(entityName, filters, firstRowOffset, fetchCount, out tableDirect);
                 command.Connection = connection as SqlCeConnection;
 
                 int searchOrdinal = -1;
-                ResultSetOptions options = ResultSetOptions.Scrollable;
+                ResultSetOptions options = ResultSetOptions.None;
 
                 object matchValue = null;
                 string matchField = null;
@@ -151,7 +159,7 @@ namespace OpenNETCF.ORM
                         var sqlfilter = filter as SqlFilterCondition;
                         if ((sqlfilter != null) && (sqlfilter.PrimaryKey))
                         {
-                            searchOrdinal = Entities[entityName].PrimaryKeyOrdinal;
+                            searchOrdinal = entity.PrimaryKeyOrdinal;
                         }
                     }
 
@@ -170,7 +178,6 @@ namespace OpenNETCF.ORM
                         }
                     }
                 }
-
                 using (var results = command.ExecuteResultSet(options))
                 {
                     if (results.HasRows)
@@ -197,6 +204,31 @@ namespace OpenNETCF.ORM
                             {
                                 results.Seek(DbSeekOptions.FirstEqual, new object[] { matchValue });
                             }
+                        }
+
+                        Dictionary<string, int> dicOrdinals = null;
+                        if (entity.CreateProxy != null)
+                        {
+                            dicOrdinals = new Dictionary<string, int>();
+                            foreach (var field in entity.Fields)
+                            {
+                                try
+                                {
+                                    if (!dicOrdinals.ContainsKey(field.FieldName))
+                                        dicOrdinals.Add(field.FieldName, results.GetOrdinal(field.FieldName));
+                                }
+                                catch
+                                {
+                                    if (!dicOrdinals.ContainsKey(field.FieldName))
+                                        dicOrdinals.Add(field.FieldName, -1);
+                                }
+                            }
+                        }
+
+                        // autofill references if desired
+                        if (referenceFields == null)
+                        {
+                            referenceFields = entity.References.ToArray();
                         }
 
                         while (results.Read())
@@ -230,78 +262,82 @@ namespace OpenNETCF.ORM
                                 }
                             }
 
-                            object item = Activator.CreateInstance(objectType);
+                            object item = null;
                             object rowPK = null;
 
-                            // autofill references if desired
-                            if (referenceFields == null)
+                            if (entity.CreateProxy == null)
                             {
-                                referenceFields = Entities[entityName].References.ToArray();
-                            }
-
-
-                            foreach (var field in Entities[entityName].Fields)
-                            {
-                                var value = results[field.Ordinal];
-                                if (value != DBNull.Value)
+                                item = Activator.CreateInstance(objectType);
+                                foreach (var field in entity.Fields)
                                 {
-                                    if (field.DataType == DbType.Object)
+                                    var value = results[field.Ordinal];
+                                    if (value != DBNull.Value)
                                     {
-                                        if (fillReferences)
+                                        if (field.DataType == DbType.Object)
                                         {
-                                            // get serializer
-                                            var itemType = item.GetType();
-                                            var deserializer = GetDeserializer(itemType);
-
-                                            if (deserializer == null)
+                                            if (fillReferences)
                                             {
-                                                throw new MissingMethodException(
-                                                    string.Format("The field '{0}' requires a custom serializer/deserializer method pair in the '{1}' Entity",
-                                                    field.FieldName, entityName));
-                                            }
+                                                // get serializer
+                                                var itemType = item.GetType();
+                                                var deserializer = GetDeserializer(itemType);
 
-                                            var @object = deserializer.Invoke(item, new object[] { field.FieldName, value });
-                                            field.PropertyInfo.SetValue(item, @object, null);
+                                                if (deserializer == null)
+                                                {
+                                                    throw new MissingMethodException(
+                                                        string.Format("The field '{0}' requires a custom serializer/deserializer method pair in the '{1}' Entity",
+                                                        field.FieldName, entityName));
+                                                }
+
+                                                var @object = deserializer.Invoke(item, new object[] { field.FieldName, value });
+                                                field.PropertyInfo.SetValue(item, @object, null);
+                                            }
+                                        }
+                                        else if (field.IsRowVersion)
+                                        {
+                                            // sql stores this an 8-byte array
+                                            field.PropertyInfo.SetValue(item, BitConverter.ToInt64((byte[])value, 0), null);
+                                        }
+                                        else if (field.PropertyInfo.PropertyType.UnderlyingTypeIs<TimeSpan>())
+                                        {
+                                            // SQL Compact doesn't support Time, so we're convert to ticks in both directions
+                                            var valueAsTimeSpan = new TimeSpan((long)value);
+                                            field.PropertyInfo.SetValue(item, valueAsTimeSpan, null);
+                                        }
+                                        else
+                                        {
+                                            field.PropertyInfo.SetValue(item, value, null);
                                         }
                                     }
-                                    else if (field.IsRowVersion)
-                                    {
-                                        // sql stores this an 8-byte array
-                                        field.PropertyInfo.SetValue(item, BitConverter.ToInt64((byte[])value, 0), null);
-                                    }
-                                    else if (field.PropertyInfo.PropertyType.UnderlyingTypeIs<TimeSpan>())
-                                    {
-                                        // SQL Compact doesn't support Time, so we're convert to ticks in both directions
-                                        var valueAsTimeSpan = new TimeSpan((long)value);
-                                        field.PropertyInfo.SetValue(item, valueAsTimeSpan, null);
-                                    }
-                                    else
-                                    {
-                                        field.PropertyInfo.SetValue(item, value, null);
-                                    }
-                                }
-                                //Check if it is reference key to set, not primary.
-                                ReferenceAttribute attr = referenceFields.Where(
-                                    x => x.ReferenceField == field.FieldName).FirstOrDefault();
+                                    //Check if it is reference key to set, not primary.
+                                    ReferenceAttribute attr = referenceFields.Where(
+                                        x => x.ReferenceField == field.FieldName).FirstOrDefault();
 
-                                if (attr != null)
-                                {
-                                    rowPK = value;
+                                    if (attr != null)
+                                    {
+                                        rowPK = value;
+                                    }
+                                    if (field.IsPrimaryKey)
+                                    {
+                                        rowPK = value;
+                                    }
                                 }
-                                if (field.IsPrimaryKey)
-                                {
-                                    rowPK = value;
-                                }
+                            }
+                            else
+                            {
+                                item = entity.CreateProxy.Invoke(results, dicOrdinals);
                             }
 
                             if ((fillReferences) && (referenceFields.Length > 0))
                             {
-                                //FillReferences(item, rowPK, referenceFields, true);
-                                FillReferences(item, rowPK, referenceFields, false, fillReferences);
+                                if (entity.Fields.KeyFields.Count == 1)
+                                {
+                                    rowPK = entity.Fields.KeyField.PropertyInfo.GetValue(item, null);
+                                    //FillReferences(item, rowPK, referenceFields, true);
+                                    FillReferences(item, rowPK, referenceFields, false, fillReferences, connection);
+                                }
                             }
 
                             items.Add(item);
-
                             if ((fetchCount > 0) && (items.Count >= fetchCount))
                             {
                                 break;
@@ -309,6 +345,7 @@ namespace OpenNETCF.ORM
                         }
                     }
                 }
+                OnAfterSelect(entity, filters, fillReferences, DateTime.Now.Subtract(start), command.CommandText);
             }
             finally
             {

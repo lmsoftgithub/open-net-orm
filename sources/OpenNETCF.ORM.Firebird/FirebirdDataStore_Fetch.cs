@@ -14,50 +14,9 @@ namespace OpenNETCF.ORM
 {
     public partial class FirebirdDataStore
     {
-
-        /// <summary>
-        /// Fetches a sorted list of entities, up to the requested number of entity instances, of the specified type from the DataStore, starting with the specified instance
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="searchFieldName"></param>
-        /// <param name="fetchCount"></param>
-        /// <param name="firstRowOffset"></param>
-        /// <returns></returns>
-        public override T[] Fetch<T>(int fetchCount, int firstRowOffset, string sortField)
+        public override object[] Fetch(Type entityType, int fetchCount, int firstRowOffset, string sortField, FieldSearchOrder sortOrder, FilterCondition filter, bool fillReferences, bool filterReferences)
         {
-            return Fetch<T>(fetchCount, firstRowOffset, sortField, FieldSearchOrder.Ascending, null, false);
-        }
-
-        /// <summary>
-        /// Fetches up to the requested number of entity instances of the specified type from the DataStore, starting with the first instance
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="fetchCount"></param>
-        /// <returns></returns>
-        public override T[] Fetch<T>(int fetchCount)
-        {
-            var type = typeof(T);
-            var items = Select(type, null, null, fetchCount, 0, false, false);
-            return items.Cast<T>().ToArray();
-        }
-
-        /// <summary>
-        /// Fetches up to the requested number of entity instances of the specified type from the DataStore, starting with the specified instance
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="fetchCount"></param>
-        /// <param name="firstRowOffset"></param>
-        /// <returns></returns>
-        public override T[] Fetch<T>(int fetchCount, int firstRowOffset)
-        {
-            var type = typeof(T);
-            var items = Select(type, null, null, fetchCount, firstRowOffset, false, false);
-            return items.Cast<T>().ToArray();
-        }
-
-        public override T[] Fetch<T>(int fetchCount, int firstRowOffset, string sortField, FieldSearchOrder sortOrder, FilterCondition filter, bool fillReferences)
-        {
-            return Fetch<T>(fetchCount, firstRowOffset, sortField, sortOrder, filter, fillReferences, false);
+            throw new NotImplementedException();
         }
 
         public override T[] Fetch<T>(int fetchCount, int firstRowOffset, string sortField, FieldSearchOrder sortOrder, FilterCondition filter, bool fillReferences, bool filterReferences)

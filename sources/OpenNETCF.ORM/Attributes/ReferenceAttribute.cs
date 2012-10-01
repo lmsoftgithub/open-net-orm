@@ -27,6 +27,9 @@ namespace OpenNETCF.ORM
         public object ConditionValue { get; set; }
         public string MappingTable { get; set; }
 
+        public bool IsArray { get; internal set; }
+        public bool IsList { get; internal set; }
+
         public ReferenceAttribute(Type referenceEntityType, string referenceField)
         {
             ReferenceEntityType = referenceEntityType;
@@ -36,6 +39,7 @@ namespace OpenNETCF.ORM
             ConditionField = "";
             ConditionValue = true;
             MappingTable = "";
+            CascadeDelete = true;
         }
 
         public bool Equals(ReferenceAttribute other)

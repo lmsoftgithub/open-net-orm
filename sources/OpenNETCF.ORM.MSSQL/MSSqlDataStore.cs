@@ -20,7 +20,16 @@ namespace OpenNETCF.ORM
 
         private string Password { get; set; }
 
-        public string FileName { get; protected set; }
+        public string ConnectionStringBase { get; protected set; }
+
+        public override string Name
+        {
+            get
+            {
+                //TODO: Add parsing of the Connection String
+                throw new NotImplementedException();
+            }
+        }
 
         protected MSSqlDataStore()
             : base()
@@ -37,7 +46,7 @@ namespace OpenNETCF.ORM
         public MSSqlDataStore(string connectionString, string password)
             : this()
         {
-            FileName = connectionString;
+            ConnectionStringBase = connectionString;
             Password = password;
         }
 
@@ -72,7 +81,7 @@ namespace OpenNETCF.ORM
         /// </summary>
         public override void DeleteStore()
         {
-            File.Delete(FileName);
+            File.Delete(ConnectionStringBase);
         }
 
         /// <summary>
@@ -233,7 +242,7 @@ namespace OpenNETCF.ORM
             var connection = GetConnection(true);
             try
             {
-                using (var command = BuildFilterCommand<SqlCommand, SqlParameter>(entityName, filters, true))
+                using (var command = BuildFilterCommand<SqlCommand, SqlParameter>(entityName, filters, true, 0, 0))
                 {
                     command.Connection = connection as SqlConnection;
                     return (int)command.ExecuteScalar();
@@ -360,7 +369,7 @@ namespace OpenNETCF.ORM
             {
                 if (m_connectionString == null)
                 {
-                    m_connectionString = string.Format(FileName, Password);
+                    m_connectionString = string.Format(ConnectionStringBase, Password);
                 }
                 return m_connectionString;
             }

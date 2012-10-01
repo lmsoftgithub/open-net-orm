@@ -9,6 +9,11 @@ namespace OpenNETCF.ORM
 {
     partial class MSSqlDataStore
     {
+        public override object[] Fetch(Type entityType, int fetchCount, int firstRowOffset, string sortField, FieldSearchOrder sortOrder, FilterCondition filter, bool fillReferences, bool filterReferences)
+        {
+            throw new NotImplementedException();
+        }
+
         public override T[] Fetch<T>(int fetchCount, int firstRowOffset, string sortField, FieldSearchOrder sortOrder, FilterCondition filter, bool fillReferences, bool filterReferences)
         {
             var type = typeof(T);

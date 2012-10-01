@@ -14,34 +14,7 @@ namespace OpenNETCF.ORM
 {
     public partial class FirebirdDataStore
     {
-
-        public override void BulkInsert(object items, bool insertReferences)
-        {
-            BulkInsert(items, insertReferences, false);
-        }
-        public override void BulkInsert(object items, bool insertReferences, bool transactional)
-        {
-            IDbTransaction transaction = null;
-            if (transactional)
-            {
-                transaction = GetTransaction(false);
-            }
-            try
-            {
-                BulkInsert(items, insertReferences, transaction);
-                if (transaction != null) transaction.Commit();
-            }
-            catch
-            {
-                if (transaction != null) transaction.Rollback();
-                throw;
-            }
-            finally
-            {
-                DoneWithTransaction(transaction, false);
-            }
-        }
-        protected void BulkInsert(object items, bool insertReferences, IDbTransaction transaction)
+        protected override void BulkInsert(object items, bool insertReferences, IDbConnection connection, IDbTransaction transaction)
         {
             if (items != null)
             {
@@ -49,46 +22,20 @@ namespace OpenNETCF.ORM
                 {
                     foreach (var item in items as Array)
                     {
-                        Insert(item, insertReferences, transaction, false);
+                        Insert(item, insertReferences, connection, transaction, false);
                     }
                 }
                 else if (items is System.Collections.IEnumerable)
                 {
                     foreach (var item in items as System.Collections.IEnumerable)
                     {
-                        Insert(item, insertReferences, transaction, false);
+                        Insert(item, insertReferences, connection, transaction, false);
                     }
                 }
             }
         }
 
-        public override void BulkInsertOrUpdate(object items, bool insertReferences)
-        {
-            BulkInsertOrUpdate(items, insertReferences, false);
-        }
-        public override void BulkInsertOrUpdate(object items, bool insertReferences, bool transactional)
-        {
-            IDbTransaction transaction = null;
-            if (transactional)
-            {
-                transaction = GetTransaction(false);
-            }
-            try
-            {
-                BulkInsertOrUpdate(items, insertReferences, transaction);
-                if (transaction != null) transaction.Commit();
-            }
-            catch
-            {
-                if (transaction != null) transaction.Rollback();
-                throw;
-            }
-            finally
-            {
-                DoneWithTransaction(transaction, false);
-            }
-        }
-        protected void BulkInsertOrUpdate(object items, bool insertReferences, IDbTransaction transaction)
+        protected override void BulkInsertOrUpdate(object items, bool insertReferences, IDbConnection connection, IDbTransaction transaction)
         {
             if (items != null)
             {
@@ -96,47 +43,20 @@ namespace OpenNETCF.ORM
                 {
                     foreach (var item in items as Array)
                     {
-                        InsertOrUpdate(item, insertReferences, transaction);
+                        InsertOrUpdate(item, insertReferences, connection, transaction);
                     }
                 }
                 else if (items is System.Collections.IEnumerable)
                 {
                     foreach (var item in items as System.Collections.IEnumerable)
                     {
-                        InsertOrUpdate(item, insertReferences, transaction);
+                        InsertOrUpdate(item, insertReferences, connection, transaction);
                     }
                 }
             }
         }
 
-        public override void Insert(object item, bool insertReferences)
-        {
-            Insert(item, insertReferences, false);
-        }
-        public override void Insert(object item, bool insertReferences, bool transactional)
-        {
-            //IDbConnection connection = null;
-            IDbTransaction transaction = null;
-            if (transactional)
-            {
-                transaction = GetTransaction(false);
-            }
-            try
-            {
-                Insert(item, insertReferences, transaction, false);
-                if (transaction != null) transaction.Commit();
-            }
-            catch
-            {
-                if (transaction != null) transaction.Rollback();
-                throw;
-            }
-            finally
-            {
-                DoneWithTransaction(transaction, false);
-            }
-        }
-        protected void Insert(object item, bool insertReferences, IDbTransaction transaction, bool checkUpdates)
+        protected override void Insert(object item, bool insertReferences, IDbConnection connection, IDbTransaction transaction, bool checkUpdates)
         {
             var itemType = item.GetType();
             string entityName = m_entities.GetNameForType(itemType);
@@ -146,7 +66,6 @@ namespace OpenNETCF.ORM
                 throw new EntityNotFoundException(item.GetType());
             }
 
-            IDbConnection connection = null;
             if (transaction == null && connection == null) connection = GetConnection(false);
             try
             {
@@ -259,9 +178,9 @@ namespace OpenNETCF.ORM
                             }
                             Entities[et].Fields[reference.ReferenceField].PropertyInfo.SetValue(element, fk, null);
                             if (checkUpdates)
-                                this.InsertOrUpdate(element, insertReferences, transaction);
+                                this.InsertOrUpdate(element, insertReferences, connection, transaction);
                             else
-                                this.Insert(element, insertReferences, transaction, false);
+                                this.Insert(element, insertReferences, connection, transaction, false);
                         }
                     }
                 }
@@ -271,48 +190,5 @@ namespace OpenNETCF.ORM
                 DoneWithConnection(connection, false);
             }
         }
-
-        public virtual void InsertOrUpdate(object item)
-        {
-            InsertOrUpdate(item, false);
-        }
-        public override void InsertOrUpdate(object item, bool insertReferences)
-        {
-            InsertOrUpdate(item, insertReferences, false);
-        }
-        public override void InsertOrUpdate(object item, bool insertReferences, bool transactional)
-        {
-            IDbTransaction transaction = null;
-            if (transactional)
-            {
-                transaction = GetTransaction(false);
-            }
-            try
-            {
-                InsertOrUpdate(item, insertReferences, transaction);
-                if (transaction != null) transaction.Commit();
-            }
-            catch
-            {
-                if (transaction != null) transaction.Rollback();
-                throw;
-            }
-            finally
-            {
-                DoneWithTransaction(transaction, false);
-            }
-        }
-        protected virtual void InsertOrUpdate(object item, bool insertReferences, IDbTransaction transaction)
-        {
-            if (this.Contains(item))
-            {
-                Update(item, insertReferences, null, transaction);
-            }
-            else
-            {
-                Insert(item, insertReferences, transaction, true);
-            }
-        }
-
     }
 }

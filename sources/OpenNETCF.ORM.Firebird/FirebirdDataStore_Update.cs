@@ -14,52 +14,7 @@ namespace OpenNETCF.ORM
 {
     public partial class FirebirdDataStore
     {
-        /// <summary>
-        /// Updates the backing DataStore with the values in the specified entity instance
-        /// </summary>
-        /// <param name="item"></param>
-        /// <remarks>
-        /// The instance provided must have a valid primary key value
-        /// </remarks>
-        public override void Update(object item)
-        {
-            //TODO: is a cascading default of true a good idea?
-            Update(item, true, null);
-        }
-
-        public override void Update(object item, string fieldName)
-        {
-            Update(item, false, fieldName);
-        }
-
-        public override void Update(object item, bool cascadeUpdates, string fieldName)
-        {
-            Update(item, cascadeUpdates, fieldName, false);
-        }
-        public override void Update(object item, bool cascadeUpdates, string fieldName, bool transactional)
-        {
-            IDbTransaction transaction = null;
-            if (transactional)
-            {
-                transaction = GetTransaction(false);
-            }
-            try
-            {
-                Update(item, cascadeUpdates, fieldName, transaction);
-                if (transaction != null) transaction.Commit();
-            }
-            catch
-            {
-                if (transaction != null) transaction.Rollback();
-                throw;
-            }
-            finally
-            {
-                DoneWithTransaction(transaction, false);
-            }
-        }
-
-        protected void Update(object item, bool cascadeUpdates, string fieldName, IDbTransaction transaction)
+        protected override void Update(object item, bool cascadeUpdates, string fieldName, IDbConnection connection, IDbTransaction transaction)
         {
             object keyValue;
             var changeDetected = false;
@@ -76,8 +31,7 @@ namespace OpenNETCF.ORM
                 throw new PrimaryKeyRequiredException("A primary key is required on an Entity in order to perform Updates");
             }
 
-            IDbConnection connection = null;
-            if (transaction == null) connection = GetConnection(false);
+            if (transaction == null && connection == null) connection = GetConnection(false);
             try
             {
                 CheckOrdinals(entityName);
@@ -258,11 +212,11 @@ namespace OpenNETCF.ORM
                             foreignKey.SetValue(refItem, keyValue, null);
                             if (!this.Contains(refItem))
                             {
-                                Insert(refItem, cascadeUpdates, transaction, true);
+                                Insert(refItem, cascadeUpdates, connection, transaction, true);
                             }
                             else
                             {
-                                Update(refItem, cascadeUpdates, fieldName, transaction);
+                                Update(refItem, cascadeUpdates, fieldName, connection, transaction);
                             }
                         }
                     }

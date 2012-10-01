@@ -63,5 +63,10 @@ namespace OpenNETCF.ORM
         {
             return m_fields.Values.GetEnumerator();
         }
+
+        public bool HasField(String fieldName)
+        {
+            return m_fields.ContainsKey(fieldName.ToLower());
+        }
     }
 }

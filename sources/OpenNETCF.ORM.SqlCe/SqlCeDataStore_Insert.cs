@@ -10,7 +10,7 @@ namespace OpenNETCF.ORM
     partial class SqlCeDataStore
     {
 
-        protected override void BulkInsert(object items, bool insertReferences, IDbTransaction transaction)
+        protected override void BulkInsert(object items, bool insertReferences, IDbConnection connection, IDbTransaction transaction)
         {
 
             if (items != null && items.GetType().IsArray && (items as Array).Length > 0)
@@ -23,21 +23,24 @@ namespace OpenNETCF.ORM
                 {
                     throw new EntityNotFoundException(firstitem.GetType());
                 }
-
-                // we'll use table direct for inserts - no point in getting the query parser involved in this
-                IDbConnection connection = null;
                 if (transaction == null)
-                    connection = GetConnection(false);
+                {
+                    if (connection == null) connection = GetConnection(false);
+                }
                 else
                     connection = transaction.Connection;
                 try
                 {
                     CheckOrdinals(entityName);
 
+                    OnBeforeInsert(items, insertReferences);
+                    var start = DateTime.Now;
+
                     FieldAttribute identity = null;
                     using (var command = new SqlCeCommand())
                     {
                         command.Connection = connection as SqlCeConnection;
+                        command.Transaction = transaction as SqlCeTransaction;
                         command.CommandText = entityName;
                         command.CommandType = CommandType.TableDirect;
 
@@ -137,13 +140,13 @@ namespace OpenNETCF.ORM
                                             // Added - 2012.08.08 - Replacing the old code to handle existing objects which were added
                                             Entities[et].Fields[reference.ReferenceField].PropertyInfo.SetValue(element, fk, null);
                                         }
-                                        this.BulkInsert((object[])valueArray, insertReferences, transaction);
+                                        this.BulkInsert((object[])valueArray, insertReferences, connection, transaction);
                                     }
                                 }
                             }
                         }
-                        command.Dispose();
                     }
+                    OnAfterInsert(items, insertReferences, DateTime.Now.Subtract(start), null);
                 }
                 finally
                 {
@@ -152,9 +155,28 @@ namespace OpenNETCF.ORM
             }
         }
 
-        protected override void BulkInsertOrUpdate(object item, bool insertReferences, IDbTransaction transaction)
+        protected override void BulkInsertOrUpdate(object items, bool insertReferences, IDbConnection connection, IDbTransaction transaction)
         {
-            throw new NotImplementedException();
+            if (items != null && items.GetType().IsArray && (items as Array).Length > 0)
+            {
+                object firstitem = (items as Array).GetValue(0);
+                var itemType = firstitem.GetType();
+                string entityName = m_entities.GetNameForType(itemType);
+
+                if (entityName == null)
+                {
+                    throw new EntityNotFoundException(firstitem.GetType());
+                }
+
+                foreach (var item in items as Array)
+                {
+                    if (this.Contains(item))
+                        this.Update(item, insertReferences, null, connection, transaction);
+                    else
+                        this.Insert(item, insertReferences, connection, transaction, insertReferences);
+                }
+
+            }
         }
 
         /// <summary>
@@ -164,7 +186,7 @@ namespace OpenNETCF.ORM
         /// <remarks>
         /// If the entity has an identity field, calling Insert will populate that field with the identity vale vefore returning
         /// </remarks>
-        protected override void Insert(object item, bool insertReferences, IDbTransaction transaction, bool checkUpdates)
+        protected override void Insert(object item, bool insertReferences, IDbConnection connection, IDbTransaction transaction, bool checkUpdates)
         {
             var itemType = item.GetType();
             string entityName = m_entities.GetNameForType(itemType);
@@ -175,15 +197,16 @@ namespace OpenNETCF.ORM
             }
             EntityInfo entity = m_entities[entityName];
 
-            // we'll use table direct for inserts - no point in getting the query parser involved in this
-            IDbConnection connection = null;
-            if (transaction == null)
+            if (transaction == null && connection == null)
                 connection = GetConnection(false);
             else
                 connection = transaction.Connection;
             try
             {
                 CheckOrdinals(entityName);
+
+                OnBeforeInsert(item, insertReferences);
+                var start = DateTime.Now;
 
                 FieldAttribute identity = null;
                 using (var command = new SqlCeCommand())
@@ -298,15 +321,15 @@ namespace OpenNETCF.ORM
                                     // Added - 2012.08.08 - Replacing the old code to handle existing objects which were added
                                     Entities[et].Fields[reference.ReferenceField].PropertyInfo.SetValue(element, fk, null);
                                     if (checkUpdates)
-                                        this.InsertOrUpdate(element, insertReferences, transaction);
+                                        this.InsertOrUpdate(element, insertReferences, connection, transaction);
                                     else
-                                        this.Insert(element, insertReferences, transaction, checkUpdates);
+                                        this.Insert(element, insertReferences, connection, transaction, checkUpdates);
                                 }
                             }
                         }
                     }
-                    command.Dispose();
                 }
+                OnAfterInsert(item, insertReferences, DateTime.Now.Subtract(start), null);
             }
             finally
             {

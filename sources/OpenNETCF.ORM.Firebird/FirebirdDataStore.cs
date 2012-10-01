@@ -12,31 +12,29 @@ using FirebirdSql.Data.FirebirdClient;
 
 namespace OpenNETCF.ORM
 {
-    public partial class FirebirdDataStore : DataStore<FbEntityInfo>
+    public partial class FirebirdDataStore : SQLStoreBase<FbEntityInfo>
     {
-        protected List<IndexInfo> m_indexNameCache = new List<IndexInfo>();
-        private IDbConnection m_connection;
         private Dictionary<Type, MethodInfo> m_serializerCache = new Dictionary<Type, MethodInfo>();
         private Dictionary<Type, MethodInfo> m_deserializerCache = new Dictionary<Type, MethodInfo>();
         private Dictionary<Type, object[]> m_referenceCache = new Dictionary<Type, object[]>();
-
-        public int DefaultStringFieldSize { get; set; }
-        public int DefaultNumericFieldPrecision { get; set; }
-        public int DefaultVarBinaryLength { get; set; }
 
         private string m_connectionString;
         private int m_maxSize = 128; // Max Database Size defaults to 128MB
 
         private string Password { get; set; }
 
-        public string FileName { get; protected set; }
+        public string ConnectionStringBase { get; protected set; }
+
+        public override string Name
+        {
+            get
+            {
+                //TODO: Add parsing of the Connection String
+                throw new NotImplementedException();
+            }
+        }
 
         private const int CommandCacheMaxLength = 10;
-        protected Dictionary<string, DbCommand> CommandCache = new Dictionary<string, DbCommand>();
-
-        public bool UseCommandCache { get; set; }
-
-        public ConnectionBehavior ConnectionBehavior { get; set; }
 
         public int MaxDatabaseSizeInMB
         {
@@ -57,15 +55,10 @@ namespace OpenNETCF.ORM
             {
                 if (m_connectionString == null)
                 {
-                    m_connectionString = string.Format(FileName, Password);
+                    m_connectionString = string.Format(ConnectionStringBase, Password);
                 }
                 return m_connectionString;
             }
-        }
-
-        protected virtual string[] ReservedWords
-        {
-            get { return m_ReservedWords; }
         }
 
         public override bool StoreExists
@@ -84,15 +77,9 @@ namespace OpenNETCF.ORM
             }
         }
 
-        protected class IndexInfo
+        protected override string AutoIncrementFieldIdentifier
         {
-            public IndexInfo()
-            {
-                MaxCharLength = -1;
-            }
-
-            public string Name { get; set; }
-            public int MaxCharLength { get; set; }
+            get { return String.Empty; }
         }
 
         protected FirebirdDataStore()
@@ -100,6 +87,9 @@ namespace OpenNETCF.ORM
         {
             UseCommandCache = false;
             FieldAttributeCollection.AllowMultiplePrimaryKeyFields = true;
+            DefaultStringFieldSize = 200;
+            DefaultNumericFieldPrecision = 16;
+            DefaultVarBinaryLength = 4000;
         }
 
         public FirebirdDataStore(string connectionString)
@@ -110,173 +100,164 @@ namespace OpenNETCF.ORM
         public FirebirdDataStore(string connectionString, string password)
             : this()
         {
-            FileName = connectionString;
+            ConnectionStringBase = connectionString;
             Password = password;
         }
 
-        protected TCommand BuildFilterCommand<TCommand, TParameter>(string entityName, IEnumerable<FilterCondition> filters)
-            where TCommand : DbCommand, new()
-            where TParameter : IDataParameter, new()
-        {
-            return BuildFilterCommand<TCommand, TParameter>(entityName, filters, false);
-        }
+        //protected override TCommand BuildFilterCommand<TCommand, TParameter>(string entityName, IEnumerable<FilterCondition> filters, bool isCount)
+        //{
+        //    var command = new TCommand();
+        //    command.CommandType = CommandType.Text;
+        //    var @params = new List<TParameter>();
 
-        protected TCommand BuildFilterCommand<TCommand, TParameter>(string entityName, IEnumerable<FilterCondition> filters, bool isCount)
-            where TCommand : DbCommand, new()
-            where TParameter : IDataParameter, new()
-        {
-            var command = new TCommand();
-            command.CommandType = CommandType.Text;
-            var @params = new List<TParameter>();
+        //    StringBuilder sb;
+        //    sb = new StringBuilder("SELECT ");
+        //    if (isCount)
+        //    {
+        //        FieldAttribute fa = (from FieldAttribute el in Entities[entityName].Fields
+        //                             where el.IsPrimaryKey
+        //                             select el).FirstOrDefault<FieldAttribute>();
+        //        if (fa == null)
+        //        {
+        //            sb.Append(" COUNT(*) ");
+        //        }
+        //        else
+        //        {
+        //            sb.AppendFormat(" COUNT({0}.{1}) ", entityName, fa.FieldName);
+        //        }
+        //    }
+        //    else
+        //    {
+        //        foreach (FieldAttribute fa in Entities[entityName].Fields)
+        //        {
+        //            sb.AppendFormat(" {0}.{1},", entityName, fa.FieldName);
+        //        }
+        //        sb.Remove(sb.Length - 1, 1);
+        //    }
+        //    sb.AppendFormat(" FROM {0} ", entityName);
 
-            StringBuilder sb;
-            sb = new StringBuilder("SELECT ");
-            if (isCount)
-            {
-                FieldAttribute fa = (from FieldAttribute el in Entities[entityName].Fields
-                                     where el.IsPrimaryKey
-                                     select el).FirstOrDefault<FieldAttribute>();
-                if (fa == null)
-                {
-                    sb.Append(" COUNT(*) ");
-                }
-                else
-                {
-                    sb.AppendFormat(" COUNT({0}.{1}) ", entityName, fa.FieldName);
-                }
-            }
-            else
-            {
-                foreach (FieldAttribute fa in Entities[entityName].Fields)
-                {
-                    sb.AppendFormat(" {0}.{1},", entityName, fa.FieldName);
-                }
-                sb.Remove(sb.Length - 1, 1);
-            }
-            sb.AppendFormat(" FROM {0} ", entityName);
+        //    if (filters != null)
+        //    {
+        //        for (int i = 0; i < filters.Count(); i++)
+        //        {
+        //            sb.Append(i == 0 ? " WHERE " : String.Format(" {0} ", FieldAttribute.GetName(typeof(FilterCondition.LogicalOperator), (int)filters.ElementAt(i).WhereOperator)));
 
-            if (filters != null)
-            {
-                for (int i = 0; i < filters.Count(); i++)
-                {
-                    sb.Append(i == 0 ? " WHERE " : String.Format(" {0} ", FieldAttribute.GetName(typeof(FilterCondition.LogicalOperator), (int)filters.ElementAt(i).WhereOperator)));
+        //            var filter = filters.ElementAt(i);
+        //            sb.Append("[" + filter.FieldName + "]");
 
-                    var filter = filters.ElementAt(i);
-                    sb.Append("[" + filter.FieldName + "]");
+        //            string paramName = string.Format("@p{0}", i);
 
-                    string paramName = string.Format("@p{0}", i);
+        //            switch (filters.ElementAt(i).Operator)
+        //            {
+        //                case FilterCondition.FilterOperator.Equals:
+        //                    if ((filter.Value == null) || (filter.Value == DBNull.Value))
+        //                    {
+        //                        sb.Append(" IS NULL ");
+        //                        continue;
+        //                    }
+        //                    sb.AppendFormat(" = {0}", paramName);
+        //                    break;
+        //                case FilterCondition.FilterOperator.Like:
+        //                    sb.AppendFormat(" LIKE {0}", paramName);
+        //                    break;
+        //                case FilterCondition.FilterOperator.LessThan:
+        //                    sb.AppendFormat(" < {0}", paramName);
+        //                    break;
+        //                case FilterCondition.FilterOperator.GreaterThan:
+        //                    sb.AppendFormat(" > {0}", paramName);
+        //                    break;
+        //                case FilterCondition.FilterOperator.LessThanOrEqual:
+        //                    sb.AppendFormat(" <= {0}", paramName);
+        //                    break;
+        //                case FilterCondition.FilterOperator.GreaterThanOrEqual:
+        //                    sb.AppendFormat(" >= {0}", paramName);
+        //                    break;
+        //                case FilterCondition.FilterOperator.In:
+        //                    if (filter.Value.GetType().IsArray)
+        //                    {
+        //                        // If we received an array as a parameter, we transform it to a String array
+        //                        // using the ToString() function of the object. This has the benefit that
+        //                        // we can give an array of custom objects and use their overriden ToString method.
+        //                        var arr = filter.Value as Array;
+        //                        String[] strarr = new String[arr.Length];
+        //                        for (int k = 0; k < arr.Length; k++) { strarr[k] = arr.GetValue(k).ToString(); }
+        //                        sb.AppendFormat(" IN ({0})", String.Join(",", strarr));
+        //                    }
+        //                    else
+        //                    {
+        //                        sb.AppendFormat(" IN ({0})", filter.Value.ToString());
+        //                    }
+        //                    break;
+        //                case FilterCondition.FilterOperator.NotEquals:
+        //                    if ((filter.Value == null) || (filter.Value == DBNull.Value))
+        //                    {
+        //                        sb.Append(" IS NOT NULL ");
+        //                        continue;
+        //                    }
+        //                    sb.AppendFormat(" <> {0}", paramName);
+        //                    break;
+        //                default:
+        //                    throw new NotSupportedException();
+        //            }
 
-                    switch (filters.ElementAt(i).Operator)
-                    {
-                        case FilterCondition.FilterOperator.Equals:
-                            if ((filter.Value == null) || (filter.Value == DBNull.Value))
-                            {
-                                sb.Append(" IS NULL ");
-                                continue;
-                            }
-                            sb.AppendFormat(" = {0}", paramName);
-                            break;
-                        case FilterCondition.FilterOperator.Like:
-                            sb.AppendFormat(" LIKE {0}", paramName);
-                            break;
-                        case FilterCondition.FilterOperator.LessThan:
-                            sb.AppendFormat(" < {0}", paramName);
-                            break;
-                        case FilterCondition.FilterOperator.GreaterThan:
-                            sb.AppendFormat(" > {0}", paramName);
-                            break;
-                        case FilterCondition.FilterOperator.LessThanOrEqual:
-                            sb.AppendFormat(" <= {0}", paramName);
-                            break;
-                        case FilterCondition.FilterOperator.GreaterThanOrEqual:
-                            sb.AppendFormat(" >= {0}", paramName);
-                            break;
-                        case FilterCondition.FilterOperator.In:
-                            if (filter.Value.GetType().IsArray)
-                            {
-                                // If we received an array as a parameter, we transform it to a String array
-                                // using the ToString() function of the object. This has the benefit that
-                                // we can give an array of custom objects and use their overriden ToString method.
-                                var arr = filter.Value as Array;
-                                String[] strarr = new String[arr.Length];
-                                for (int k = 0; k < arr.Length; k++) { strarr[k] = arr.GetValue(k).ToString(); }
-                                sb.AppendFormat(" IN ({0})", String.Join(",", strarr));
-                            }
-                            else
-                            {
-                                sb.AppendFormat(" IN ({0})", filter.Value.ToString());
-                            }
-                            break;
-                        case FilterCondition.FilterOperator.NotEquals:
-                            if ((filter.Value == null) || (filter.Value == DBNull.Value))
-                            {
-                                sb.Append(" IS NOT NULL ");
-                                continue;
-                            }
-                            sb.AppendFormat(" <> {0}", paramName);
-                            break;
-                        default:
-                            throw new NotSupportedException();
-                    }
+        //            var param = new TParameter()
+        //            {
+        //                ParameterName = paramName,
+        //                Value = filter.Value ?? DBNull.Value
+        //            };
 
-                    var param = new TParameter()
-                    {
-                        ParameterName = paramName,
-                        Value = filter.Value ?? DBNull.Value
-                    };
+        //            @params.Add(param);
+        //        }
+        //    }
+        //    if (Entities[entityName].SortingFields.Count > 0)
+        //    {
+        //        sb.Append(" ORDER BY ");
+        //        foreach (FieldAttribute fa in Entities[entityName].SortingFields.OrderBy(d => d.SortSequence))
+        //        {
+        //            if (fa.SortOrder == FieldSearchOrder.Descending)
+        //                sb.AppendFormat(" {0} DESC,", fa.FieldName);
+        //            else
+        //                sb.AppendFormat(" {0} ASC,", fa.FieldName);
+        //        }
+        //        sb.Remove(sb.Length - 1, 1);
+        //    }
+        //    var sql = sb.ToString();
+        //    command.CommandText = sql;
+        //    command.Parameters.AddRange(@params.ToArray());
 
-                    @params.Add(param);
-                }
-            }
-            if (Entities[entityName].SortingFields.Count > 0)
-            {
-                sb.Append(" ORDER BY ");
-                foreach (FieldAttribute fa in Entities[entityName].SortingFields.OrderBy(d => d.SortSequence))
-                {
-                    if (fa.SortOrder == FieldSearchOrder.Descending)
-                        sb.AppendFormat(" {0} DESC,", fa.FieldName);
-                    else
-                        sb.AppendFormat(" {0} ASC,", fa.FieldName);
-                }
-                sb.Remove(sb.Length - 1, 1);
-            }
-            var sql = sb.ToString();
-            command.CommandText = sql;
-            command.Parameters.AddRange(@params.ToArray());
+        //    if (UseCommandCache)
+        //    {
+        //        lock (CommandCache)
+        //        {
+        //            if (CommandCache.ContainsKey(sql))
+        //            {
+        //                command.Dispose();
+        //                command = (TCommand)CommandCache[sb.ToString()];
 
-            if (UseCommandCache)
-            {
-                lock (CommandCache)
-                {
-                    if (CommandCache.ContainsKey(sql))
-                    {
-                        command.Dispose();
-                        command = (TCommand)CommandCache[sb.ToString()];
+        //                // use the cached command object, but we must copy over the new command parameter values
+        //                // or it will use the old ones
+        //                for (int p = 0; p < command.Parameters.Count; p++)
+        //                {
+        //                    command.Parameters[p].Value = @params[p].Value;
+        //                }
+        //            }
+        //            else
+        //            {
+        //                CommandCache.Add(sql, command);
 
-                        // use the cached command object, but we must copy over the new command parameter values
-                        // or it will use the old ones
-                        for (int p = 0; p < command.Parameters.Count; p++)
-                        {
-                            command.Parameters[p].Value = @params[p].Value;
-                        }
-                    }
-                    else
-                    {
-                        CommandCache.Add(sql, command);
+        //                // trim the cache so it doesn't grow infinitely
+        //                if (CommandCache.Count > CommandCacheMaxLength)
+        //                {
+        //                    CommandCache.Remove(CommandCache.First().Key);
+        //                }
+        //            }
+        //        }
+        //    }
 
-                        // trim the cache so it doesn't grow infinitely
-                        if (CommandCache.Count > CommandCacheMaxLength)
-                        {
-                            CommandCache.Remove(CommandCache.First().Key);
-                        }
-                    }
-                }
-            }
+        //    return command;
+        //}
 
-            return command;
-        }
-
-        protected void CheckOrdinals(string entityName)
+        protected override void CheckOrdinals(string entityName)
         {
             if (Entities[entityName].Fields.OrdinalsAreValid) return;
 
@@ -324,73 +305,11 @@ namespace OpenNETCF.ORM
             }
         }
 
-        protected void CheckPrimaryKeyIndex(string entityName)
+        protected override void CheckPrimaryKeyIndex(string entityName)
         {
             if ((Entities[entityName] as FbEntityInfo).PrimaryKeyIndexName != null) return;
             var name = GetPrimaryKeyIndexName(entityName);
             (Entities[entityName] as FbEntityInfo).PrimaryKeyIndexName = name;
-        }
-
-        /// <summary>
-        /// Determines if the specified object already exists in the Store (by primary key value)
-        /// </summary>
-        /// <param name="item"></param>
-        /// <returns></returns>
-        public override bool Contains(object item)
-        {
-            var itemType = item.GetType();
-            string entityName = m_entities.GetNameForType(itemType);
-
-            if (entityName == null)
-            {
-                throw new EntityNotFoundException(item.GetType());
-            }
-
-            // Commented - 2012.08.08 - Old unique KeyField working
-            //var keyValue = this.Entities[entityName].Fields.KeyField.PropertyInfo.GetValue(item, null);
-            //var existing = Select(itemType, null, keyValue, -1, -1).FirstOrDefault();
-
-            // Added - 2012.08.08 - More generic way of working
-            var filters = new List<FilterCondition>();
-            foreach (FieldAttribute field in Entities[entityName].Fields.KeyFields)
-            {
-                filters.Add(new FilterCondition(field.FieldName, field.PropertyInfo.GetValue(item, null), FilterCondition.FilterOperator.Equals));
-            }
-            var existing = Select(itemType, filters, 0, 0, false, false).FirstOrDefault();
-
-            return existing != null;
-        }
-
-        /// <summary>
-        /// Returns the number of instances of the given type in the DataStore
-        /// </summary>
-        /// <typeparam name="T">Entity type to count</typeparam>
-        /// <returns>The number of instances in the store</returns>
-        public override int Count<T>()
-        {
-            var t = typeof(T);
-            string entityName = m_entities.GetNameForType(t);
-
-            if (entityName == null)
-            {
-                throw new EntityNotFoundException(t);
-            }
-
-            var connection = GetConnection(true);
-            try
-            {
-                using (var command = GetNewCommandObject())
-                {
-                    command.Connection = connection;
-                    command.CommandText = string.Format("SELECT COUNT(*) FROM {0}", entityName);
-                    var count = command.ExecuteScalar();
-                    return Convert.ToInt32(count);
-                }
-            }
-            finally
-            {
-                DoneWithConnection(connection, true);
-            }
         }
 
         public override int Count<T>(IEnumerable<FilterCondition> filters)
@@ -406,7 +325,7 @@ namespace OpenNETCF.ORM
             var connection = GetConnection(true);
             try
             {
-                using (var command = BuildFilterCommand<FbCommand, FbParameter>(entityName, filters, true))
+                using (var command = BuildFilterCommand<FbCommand, FbParameter>(entityName, filters, true, 0, 0))
                 {
                     command.Connection = connection as FbConnection;
                     return (int)command.ExecuteScalar();
@@ -418,12 +337,12 @@ namespace OpenNETCF.ORM
             }
         }
 
-        protected IDataParameter CreateParameterObject(string parameterName, object parameterValue)
+        protected override IDataParameter CreateParameterObject(string parameterName, object parameterValue)
         {
             return new FbParameter(parameterName, parameterValue);
         }
 
-        protected virtual void CreateTable(IDbConnection connection, EntityInfo entity)
+        protected override void CreateTable(IDbConnection connection, EntityInfo entity)
         {
             Boolean bTableExists = false;
             Boolean bMultiplePrimaryKeys = false;
@@ -497,7 +416,7 @@ namespace OpenNETCF.ORM
                         // create indexes
                         if (field.SearchOrder != FieldSearchOrder.NotSearchable)
                         {
-                            VerifyIndex(entity.EntityName, field.FieldName, field.SearchOrder, connection);
+                            field.IndexName = VerifyIndex(entity.EntityName, field.FieldName, field.SearchOrder, connection);
                         }
                     }
                     else
@@ -505,7 +424,7 @@ namespace OpenNETCF.ORM
                         // create indexes
                         if (field.SearchOrder != FieldSearchOrder.NotSearchable)
                         {
-                            VerifyIndex(entity.EntityName, field.FieldName, field.SearchOrder, connection);
+                            field.IndexName = VerifyIndex(entity.EntityName, field.FieldName, field.SearchOrder, connection);
                         }
                     }
                 }
@@ -556,102 +475,7 @@ namespace OpenNETCF.ORM
         /// </summary>
         public override void DeleteStore()
         {
-            File.Delete(FileName);
-        }
-
-        protected virtual void DoneWithConnection(IDbConnection connection, bool maintenance)
-        {
-            if (connection != null)
-            {
-                switch (ConnectionBehavior)
-                {
-                    case ConnectionBehavior.AlwaysNew:
-                        connection.Close();
-                        connection.Dispose();
-                        break;
-                    case ConnectionBehavior.HoldMaintenance:
-                        if (maintenance) return;
-                        connection.Close();
-                        connection.Dispose();
-                        break;
-                    case ConnectionBehavior.Persistent:
-                        return;
-                    default:
-                        throw new NotSupportedException();
-                }
-            }
-        }
-
-        protected virtual void DoneWithTransaction(IDbTransaction transaction, bool maintenance)
-        {
-            if (transaction != null)
-            {
-                try
-                {
-                    DoneWithConnection(transaction.Connection, maintenance);
-                }
-                catch { }
-                finally
-                {
-                    transaction.Dispose();
-                }
-            }
-        }
-
-        /// <summary>
-        /// Deletes all entity instances of the specified type from the DataStore
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        public override void Drop<T>()
-        {
-            Drop(typeof(T));
-        }
-
-        /// <summary>
-        /// Deletes all entity instances of the specified type from the DataStore
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        public override void Drop(System.Type entityType)
-        {
-            string entityName = m_entities.GetNameForType(entityType);
-
-            if (entityName == null)
-            {
-                throw new EntityNotFoundException(entityType);
-            }
-
-            // TODO: handle cascade deletes?
-            EntityInfo entity = m_entities[entityName];
-
-            var connection = GetConnection(true);
-            try
-            {
-                Drop(connection, entity);
-            }
-            finally
-            {
-                DoneWithConnection(connection, true);
-            }
-        }
-
-        private void Drop(IDbConnection connection, EntityInfo entity)
-        {
-            using (var command = GetNewCommandObject())
-            {
-                command.Connection = connection;
-                command.CommandText = string.Format("DROP TABLE {0}", entity.EntityName);
-                command.ExecuteNonQuery();
-            }
-        }
-
-        protected virtual void DropAndCreateTable(IDbConnection connection, EntityInfo entity)
-        {
-            Boolean bTableExists = TableExists(connection, entity);
-            if (bTableExists)
-            {
-                Drop(connection, entity);
-            }
-            CreateTable(connection, entity);
+            File.Delete(ConnectionStringBase);
         }
 
         /// <summary>
@@ -681,7 +505,7 @@ namespace OpenNETCF.ORM
             }
         }
 
-        protected virtual Boolean FieldExists(IDbConnection connection, EntityInfo entity, FieldAttribute field)
+        protected override Boolean FieldExists(IDbConnection connection, EntityInfo entity, FieldAttribute field)
         {
             Boolean exists = false;
             try
@@ -715,184 +539,12 @@ namespace OpenNETCF.ORM
             return exists;
         }
 
-        /// <summary>
-        /// Populates the ReferenceField members of the provided entity instance
-        /// </summary>
-        /// <param name="instance"></param>
-        public override void FillReferences(object instance)
-        {
-            FillReferences(instance, null, null, false, false);
-        }
-
-        public override void FillReferences(object instance, bool filterReferences)
-        {
-            FillReferences(instance, null, null, false, filterReferences);
-        }
-
-        protected void FillReferences(object instance, object keyValue, ReferenceAttribute[] fieldsToFill, bool cacheReferenceTable, bool filterReferences)
-        {
-            if (instance == null) return;
-
-            Type type = instance.GetType();
-            string entityName = m_entities.GetNameForType(type);
-
-            if (entityName == null)
-            {
-                throw new EntityNotFoundException(type);
-            }
-
-            if (Entities[entityName].References.Count == 0) return;
-
-            Dictionary<ReferenceAttribute, object[]> referenceItems = new Dictionary<ReferenceAttribute, object[]>();
-
-            // query the key if not provided
-            if (keyValue == null)
-            {
-                keyValue = m_entities[entityName].Fields.KeyField.PropertyInfo.GetValue(instance, null);
-            }
-
-            // populate reference fields
-            foreach (var reference in Entities[entityName].References)
-            {
-                if (fieldsToFill != null)
-                {
-                    if (!fieldsToFill.Contains(reference))
-                    {
-                        continue;
-                    }
-                }
-
-                // get the lookup values - until we support filtered selects, this may be very expensive memory-wise
-                if (!referenceItems.ContainsKey(reference))
-                {
-                    object[] refData;
-                    if (cacheReferenceTable)
-                    {
-                        // TODO: ref cache needs to be type->reftype->ref's, not type->refs
-
-                        if (!m_referenceCache.ContainsKey(reference.ReferenceEntityType))
-                        {
-                            refData = Select(reference.ReferenceEntityType, null, null, -1, 0);
-                            m_referenceCache.Add(reference.ReferenceEntityType, refData);
-                        }
-                        else
-                        {
-                            refData = m_referenceCache[reference.ReferenceEntityType];
-                        }
-                    }
-                    else
-                    {
-                        if (!filterReferences || reference.ConditionField == null || reference.ConditionField.Length <= 0)
-                        {
-                            refData = Select(reference.ReferenceEntityType, reference.ReferenceField, keyValue, -1, 0, true, filterReferences);
-                        }
-                        else
-                        {
-                            var filters = new FilterCondition[2] {
-                                  new FilterCondition(reference.ReferenceField, keyValue, FilterCondition.FilterOperator.Equals)
-                                 ,new FilterCondition(reference.ConditionField, reference.ConditionValue, FilterCondition.FilterOperator.NotEquals)};
-                            refData = Select(reference.ReferenceEntityType, filters, -1, 0, true, filterReferences);
-                        }
-                    }
-
-                    referenceItems.Add(reference, refData);
-                }
-
-                // get the lookup field
-                var childEntityName = m_entities.GetNameForType(reference.ReferenceEntityType);
-
-                System.Collections.ArrayList children = new System.Collections.ArrayList();
-
-                // now look for those that match our pk
-                foreach (var child in referenceItems[reference])
-                {
-                    var childKey = m_entities[childEntityName].Fields[reference.ReferenceField].PropertyInfo.GetValue(child, null);
-
-                    // this seems "backward" because childKey may turn out null, 
-                    // so doing it backwards (keyValue.Equals instead of childKey.Equals) prevents a null referenceexception
-                    if (keyValue.Equals(childKey))
-                    {
-                        children.Add(child);
-                    }
-                }
-                var carr = children.ToArray(reference.ReferenceEntityType);
-                if (reference.PropertyInfo.PropertyType.IsArray)
-                {
-                    reference.PropertyInfo.SetValue(instance, carr, null);
-                }
-                else
-                {
-                    var enumerator = carr.GetEnumerator();
-
-                    if (enumerator.MoveNext())
-                    {
-                        reference.PropertyInfo.SetValue(instance, children[0], null);
-                    }
-                }
-            }
-        }
-
-        protected void FlushReferenceTableCache()
-        {
-            m_referenceCache.Clear();
-        }
-
-        protected IDbCommand GetNewCommandObject()
+        protected override IDbCommand GetNewCommandObject()
         {
             return new FbCommand();
         }
 
-        protected IndexInfo GetIndexInfo(string indexName)
-        {
-            return m_indexNameCache.FirstOrDefault(ii => ii.Name == indexName);
-        }
-
-        protected virtual IDbConnection GetConnection(bool maintenance)
-        {
-            switch (ConnectionBehavior)
-            {
-                case ConnectionBehavior.AlwaysNew:
-                    var connection = GetNewConnectionObject();
-                    connection.Open();
-                    return connection;
-                case ConnectionBehavior.HoldMaintenance:
-                    if (m_connection == null)
-                    {
-                        m_connection = GetNewConnectionObject();
-                        m_connection.Open();
-                    }
-                    if (maintenance) return m_connection;
-                    var connection2 = GetNewConnectionObject();
-                    connection2.Open();
-                    return connection2;
-                case ConnectionBehavior.Persistent:
-                    if (m_connection == null)
-                    {
-                        m_connection = GetNewConnectionObject();
-                        m_connection.Open();
-                    }
-                    return m_connection;
-                default:
-                    throw new NotSupportedException();
-            }
-        }
-
-        protected virtual MethodInfo GetDeserializer(Type itemType)
-        {
-            if (m_deserializerCache.ContainsKey(itemType))
-            {
-                return m_deserializerCache[itemType];
-            }
-
-            var deserializer = itemType.GetMethod("Deserialize", BindingFlags.Public | BindingFlags.Instance);
-
-            if (deserializer == null) return null;
-
-            m_deserializerCache.Add(itemType, deserializer);
-            return deserializer;
-        }
-
-        protected virtual string GetFieldDataTypeString(string entityName, FieldAttribute field)
+        protected override string GetFieldDataTypeString(string entityName, FieldAttribute field)
         {
             // the SQL RowVersion is a special case
             if (field.IsRowVersion)
@@ -924,12 +576,7 @@ namespace OpenNETCF.ORM
             return field.DataType.ToSqlTypeString();
         }
 
-        protected virtual string GetFieldCreationAttributes(EntityAttribute attribute, FieldAttribute field)
-        {
-            return GetFieldCreationAttributes(attribute, field, false);
-        }
-
-        protected virtual string GetFieldCreationAttributes(EntityAttribute attribute, FieldAttribute field, Boolean MultiplePrimaryKeys)
+        protected override string GetFieldCreationAttributes(EntityAttribute attribute, FieldAttribute field, Boolean MultiplePrimaryKeys)
         {
             StringBuilder sb = new StringBuilder();
 
@@ -1045,7 +692,7 @@ namespace OpenNETCF.ORM
             return insertCommand;
         }
 
-        protected string GetPrimaryKeyIndexName(string entityName)
+        protected override string GetPrimaryKeyIndexName(string entityName)
         {
             var connection = GetConnection(true);
             String result = null;
@@ -1086,41 +733,12 @@ namespace OpenNETCF.ORM
             }
         }
 
-        protected IDbConnection GetNewConnectionObject()
+        protected override IDbConnection GetNewConnectionObject()
         {
             return new FbConnection(ConnectionString);
         }
 
-        protected virtual TCommand GetSelectCommand<TCommand, TParameter>(string entityName, IEnumerable<FilterCondition> filters, out bool tableDirect)
-            where TCommand : DbCommand, new()
-            where TParameter : IDataParameter, new()
-        {
-            tableDirect = false;
-            return BuildFilterCommand<TCommand, TParameter>(entityName, filters);
-        }
-
-        protected virtual MethodInfo GetSerializer(Type itemType)
-        {
-            if (m_serializerCache.ContainsKey(itemType))
-            {
-                return m_serializerCache[itemType];
-            }
-
-            var serializer = itemType.GetMethod("Serialize", BindingFlags.Public | BindingFlags.Instance);
-
-            if (serializer == null) return null;
-
-            m_serializerCache.Add(itemType, serializer);
-            return serializer;
-        }
-
-        protected virtual IDbTransaction GetTransaction(bool maintenance)
-        {
-            var connection = GetConnection(maintenance);
-            return connection.BeginTransaction();
-        }
-
-        protected virtual Boolean TableExists(IDbConnection connection, EntityInfo entity)
+        protected override Boolean TableExists(IDbConnection connection, EntityInfo entity)
         {
             Boolean exists = false;
             try
@@ -1248,12 +866,7 @@ namespace OpenNETCF.ORM
             }
         }
 
-        protected virtual string VerifyIndex(string entityName, string fieldName, FieldSearchOrder searchOrder)
-        {
-            return VerifyIndex(entityName, fieldName, searchOrder, null);
-        }
-
-        protected string VerifyIndex(string entityName, string fieldName, FieldSearchOrder searchOrder, IDbConnection connection)
+        protected override string VerifyIndex(string entityName, string fieldName, FieldSearchOrder searchOrder, IDbConnection connection)
         {
             bool localConnection = false;
             if (connection == null)

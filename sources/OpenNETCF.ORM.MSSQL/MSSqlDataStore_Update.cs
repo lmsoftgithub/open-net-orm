@@ -11,7 +11,7 @@ namespace OpenNETCF.ORM
     partial class MSSqlDataStore
     {
 
-        protected override void Update(object item, bool cascadeUpdates, string fieldName, IDbTransaction transaction)
+        protected override void Update(object item, bool cascadeUpdates, string fieldName, IDbConnection connection, IDbTransaction transaction)
         {
             object keyValue;
             var changeDetected = false;
@@ -28,12 +28,14 @@ namespace OpenNETCF.ORM
                 throw new PrimaryKeyRequiredException("A primary key is required on an Entity in order to perform Updates");
             }
 
-            IDbConnection connection = null;
-            if (transaction == null) connection = GetConnection(false);
+            if (transaction == null && connection == null) connection = GetConnection(false);
             try
             {
                 CheckOrdinals(entityName);
                 CheckPrimaryKeyIndex(entityName);
+
+                OnBeforeUpdate(item, cascadeUpdates, fieldName);
+                var start = DateTime.Now;
 
                 using (var command = GetNewCommandObject())
                 {
@@ -189,36 +191,20 @@ namespace OpenNETCF.ORM
                             }
                         }
                     }
+
+                    if (cascadeUpdates)
+                    {
+                        CascadeUpdates(item, fieldName, keyValue, m_entities[entityName], connection, transaction);
+                    }
+                    if (changeDetected)
+                        OnAfterUpdate(item, cascadeUpdates, fieldName, DateTime.Now.Subtract(start), updateSQL.ToString());
+                    else
+                        OnAfterUpdate(item, cascadeUpdates, fieldName, DateTime.Now.Subtract(start), null);
                 }
             }
             finally
             {
                 DoneWithConnection(connection, false);
-            }
-
-            if (cascadeUpdates)
-            {
-                // TODO: move this into the base DataStore class as it's not SqlCe-specific
-                foreach (var reference in Entities[entityName].References)
-                {
-                    var itemList = reference.PropertyInfo.GetValue(item, null) as Array;
-                    if (itemList != null)
-                    {
-                        foreach (var refItem in itemList)
-                        {
-                            var foreignKey = refItem.GetType().GetProperty(reference.ReferenceField, BindingFlags.Instance | BindingFlags.Public);
-                            foreignKey.SetValue(refItem, keyValue, null);
-                            if (!this.Contains(refItem))
-                            {
-                                Insert(refItem, cascadeUpdates, transaction, true);
-                            }
-                            else
-                            {
-                                Update(refItem, cascadeUpdates, fieldName, transaction);
-                            }
-                        }
-                    }
-                }
             }
         }
     }

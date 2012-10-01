@@ -214,5 +214,29 @@ namespace OpenNETCF.ORM
                 return checkType.Equals(typeof(T));
             }
         }
+
+        /// <summary>
+        /// The purpose of this function is to ensure that the name given to the tables match the constraints of
+        /// all the compatible databases. This includes Oracle which has a 30 character length limit.
+        /// </summary>
+        /// <param name="tableName"></param>
+        /// <returns></returns>
+        public static bool MatchTableNamingConstraints(string tableName)
+        {
+            if (tableName != null && tableName.Length <= 30) return true;
+            return false;
+        }
+
+        /// <summary>
+        /// The purpose of this function is to ensure that the name given to the fields match the constraints of
+        /// all the compatible databases. This includes Oracle which has a 30 character length limit.
+        /// </summary>
+        /// <param name="fieldName"></param>
+        /// <returns></returns>
+        public static bool MatchFieldNamingConstraints(string fieldName)
+        {
+            if (fieldName != null && fieldName.Length <= 30) return true;
+            return false;
+        }
     }
 }
