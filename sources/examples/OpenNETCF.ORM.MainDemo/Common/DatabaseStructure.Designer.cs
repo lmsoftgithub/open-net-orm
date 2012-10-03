@@ -54,7 +54,7 @@
             // btnRefreshDBStructure
             // 
             this.btnRefreshDBStructure.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnRefreshDBStructure.Location = new System.Drawing.Point(129, 3);
+            this.btnRefreshDBStructure.Location = new System.Drawing.Point(171, 3);
             this.btnRefreshDBStructure.Name = "btnRefreshDBStructure";
             this.btnRefreshDBStructure.Size = new System.Drawing.Size(75, 29);
             this.btnRefreshDBStructure.TabIndex = 18;
@@ -117,7 +117,8 @@
             // 
             // btnGenerate
             // 
-            this.btnGenerate.Location = new System.Drawing.Point(210, 3);
+            this.btnGenerate.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnGenerate.Location = new System.Drawing.Point(252, 3);
             this.btnGenerate.Name = "btnGenerate";
             this.btnGenerate.Size = new System.Drawing.Size(118, 29);
             this.btnGenerate.TabIndex = 23;

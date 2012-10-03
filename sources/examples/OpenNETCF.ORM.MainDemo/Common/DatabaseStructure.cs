@@ -251,6 +251,7 @@ namespace OpenNETCF.ORM.MainDemo.Common
             {
                 this.treeDBStructure.Nodes.Clear();
                 this.prgProgress.Value = 0;
+                this.StopGenerator = true;
             }
             catch (Exception ex)
             {
@@ -289,6 +290,7 @@ namespace OpenNETCF.ORM.MainDemo.Common
             {
                 if (this._DataStore != null)
                 {
+                    Boolean useTransations = this._config.UseTransactionsForInserts;
                     var entities = this._DataStore.GetEntities();
                     int baseAmount = this._config.GenerateDataBaseAmount;
                     var list = new List<EntityInfo>();
@@ -308,21 +310,27 @@ namespace OpenNETCF.ORM.MainDemo.Common
                     if (list.Count > 0)
                     {
                         double maxValue = list.Count * 2.5 * baseAmount;
+                        double speed = 0;
                         foreach (var entity in list)
                         {
                             if (this._stopGenerator) break;
                             Random rand = new Random(DateTime.Now.Millisecond * DateTime.Now.Minute);
                             int iCount = baseAmount + rand.Next(2 * baseAmount);
                             Model.modelbase item = (Model.modelbase)Activator.CreateInstance(entity.EntityType);
+                            Boolean bHasReferences = (entity.References.Count > 0);
+                            var start = DateTime.Now;
                             for (int i = 0; i < iCount; i++)
                             {
                                 if (this._stopGenerator) break;
                                 var newelement = item.CreateRandomObject();
                                 AddMessage(newelement.ToString());
-                                this._DataStore.Insert(newelement);
                                 RecurseCreation(newelement, entities);
+                                this._DataStore.Insert(newelement, bHasReferences, useTransations);
                                 Progress(iEntity++ / maxValue);
                             }
+                            speed = DateTime.Now.Subtract(start).TotalMilliseconds / iCount;
+                            System.Diagnostics.Debug.WriteLine(String.Format("{1} average speed: {0}ms/item", speed, entity.EntityName));
+                            AddMessage(String.Format("{1} average speed: {0}ms/item", speed, entity.EntityName));
                         }
                     }
                 }
@@ -347,7 +355,8 @@ namespace OpenNETCF.ORM.MainDemo.Common
                 foreach (var refentity in entities[entityName].References)
                 {
                     if (this._stopGenerator) break;
-                    List<object> items = new List<object>();
+                    var genType = typeof(List<>).MakeGenericType(refentity.ReferenceEntityType);
+                    var items = (System.Collections.IList)Activator.CreateInstance(genType);
                     Model.modelbase reference = (Model.modelbase)Activator.CreateInstance(refentity.ReferenceEntityType);
                     int iCount = rand.Next(this._config.GenerateChildrenBaseAmount);
                     for (int i = 0; i < iCount; i++)
@@ -355,8 +364,23 @@ namespace OpenNETCF.ORM.MainDemo.Common
                         if (this._stopGenerator) break;
                         var newelement = reference.CreateRandomObject(primarykey);
                         AddMessage(newelement.ToString());
-                        this._DataStore.Insert(newelement);
+                        items.Add(newelement);
+                        //this._DataStore.Insert(newelement);
                         RecurseCreation(newelement, entities);
+                    }
+                    if (refentity.IsArray)
+                    {
+                        var arr = Array.CreateInstance(refentity.ReferenceEntityType, items.Count);
+                        items.CopyTo(arr, 0);
+                        refentity.PropertyInfo.SetValue(item, arr, null);
+                    }
+                    else if (refentity.IsList)
+                    {
+                        refentity.PropertyInfo.SetValue(item, items, null);
+                    }
+                    else
+                    {
+                        refentity.PropertyInfo.SetValue(item, items[0], null);
                     }
                 }
             }

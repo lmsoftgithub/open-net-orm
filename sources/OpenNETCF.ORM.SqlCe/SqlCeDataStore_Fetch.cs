@@ -60,10 +60,11 @@ namespace OpenNETCF.ORM
 
                     using (var results = command.ExecuteResultSet(ResultSetOptions.Scrollable))
                     {
+                        var ordinals = GetOrdinals(entityName, results);
                         // get the ordinal for the filter field (if one is used)
                         if (filter != null)
                         {
-                            filterOrdinal = results.GetOrdinal(filter.FieldName);
+                            filterOrdinal =ordinals[filter.FieldName];
                         }
 
                         while (results.Read())
@@ -94,7 +95,7 @@ namespace OpenNETCF.ORM
                                     if (MatchesFilter(checkValue, filter))
                                     {
                                         // hydrate the object
-                                        var item = HydrateEntity<T>(entityName, results, fillReferences, connection);
+                                        var item = HydrateEntity<T>(entityName, results, ordinals, fillReferences, connection);
                                         list.Add(item);
 
                                         currentOffset++;
@@ -104,7 +105,7 @@ namespace OpenNETCF.ORM
                                 else
                                 {
                                     // hydrate the object
-                                    var item = HydrateEntity<T>(entityName, results, fillReferences, connection);
+                                    var item = HydrateEntity<T>(entityName, results, ordinals, fillReferences, connection);
                                     list.Add(item);
 
                                     currentOffset++;
@@ -125,7 +126,7 @@ namespace OpenNETCF.ORM
             return list.ToArray();
         }
 
-        private T HydrateEntity<T>(string entityName, SqlCeResultSet results, bool fillReferences, IDbConnection connection)
+        private T HydrateEntity<T>(string entityName, SqlCeResultSet results, Dictionary<string, int> ordinals, bool fillReferences, IDbConnection connection)
             where T : new()
         {
             var objectType = typeof(T);
@@ -134,12 +135,9 @@ namespace OpenNETCF.ORM
             object rowPK = null;
             var fields = Entities[entityName].Fields;
 
-            CheckOrdinals(entityName);
-
             foreach (var field in fields)
             {
-
-                var value = results[field.Ordinal];
+                var value = results[ordinals[field.FieldName]];
                 if (value != DBNull.Value)
                 {
                     if (field.DataType == DbType.Object)

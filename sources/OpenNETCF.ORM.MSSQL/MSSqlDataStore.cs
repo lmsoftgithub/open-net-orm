@@ -96,7 +96,7 @@ namespace OpenNETCF.ORM
             {
                 foreach (var entity in this.Entities)
                 {
-                    DropAndCreateTable(connection, entity);
+                    DropAndCreateTable(connection, entity, false);
                 }
             }
             finally
@@ -471,54 +471,6 @@ namespace OpenNETCF.ORM
                         }
                     }
                 }
-            }
-        }
-
-        protected override void CheckOrdinals(string entityName)
-        {
-            if (Entities[entityName].Fields.OrdinalsAreValid) return;
-
-            var connection = GetConnection(true);
-            try
-            {
-                using (var command = GetNewCommandObject())
-                {
-                    command.Connection = connection;
-                    command.CommandText = string.Format("SELECT DISTINCT col.name, col.column_id FROM sys.columns col INNER JOIN sys.tables t 	ON col.object_id = t.object_id WHERE t.name = '{0}'", entityName);
-                    DataTable DT;
-                    using (var reader = command.ExecuteReader())
-                    {
-                        DT = new DataTable();
-                        DT.Load(reader);
-                        foreach (DataRow row in DT.Rows)
-                        {
-                            String fieldName = ((String)row["name"]).ToUpperInvariant();
-                            Int32 fieldOrdinal = ((Int32)row["column_id"]) - 1;
-                            FieldAttribute field;
-                            field = (from FieldAttribute el in Entities[entityName].Fields
-                                     where el.FieldName.ToUpperInvariant() == fieldName
-                                     select el).FirstOrDefault<FieldAttribute>();
-                            if (field != null) field.Ordinal = fieldOrdinal;
-                        }
-                        if (DT.Rows.Count == Entities[entityName].Fields.Count)
-                            Entities[entityName].Fields.OrdinalsAreValid = true;
-                        DT.Dispose();
-                    }
-                    //using (var reader = command.ExecuteReader())
-                    //{
-                    //    foreach (var field in Entities[entityName].Fields)
-                    //    {
-                    //        field.Ordinal = reader.GetOrdinal(field.FieldName);
-                    //    }
-
-                    //    Entities[entityName].Fields.OrdinalsAreValid = true;
-                    //}
-                    command.Dispose();
-                }
-            }
-            finally
-            {
-                DoneWithConnection(connection, true);
             }
         }
     }

@@ -40,7 +40,6 @@ namespace OpenNETCF.ORM
                     }
                 }
 
-                CheckOrdinals(entityName);
                 CheckPrimaryKeyIndex(entityName);
 
                 using (var command = new SqlCeCommand())

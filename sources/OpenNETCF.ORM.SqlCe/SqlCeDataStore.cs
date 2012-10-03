@@ -212,39 +212,6 @@ namespace OpenNETCF.ORM
             }
         }
 
-
-        protected override void CheckOrdinals(string entityName)
-        {
-            if (Entities[entityName].Fields.OrdinalsAreValid) return;
-
-            var connection = GetConnection(true);
-            try
-            {
-                using (var command = new SqlCeCommand())
-                {
-                    command.Connection = connection as SqlCeConnection;
-                    command.CommandText = entityName;
-                    command.CommandType = CommandType.TableDirect;
-
-                    using (var reader = command.ExecuteReader())
-                    {
-                        foreach (var field in Entities[entityName].Fields)
-                        {
-                            field.Ordinal = reader.GetOrdinal(field.FieldName);
-                        }
-
-                        Entities[entityName].Fields.OrdinalsAreValid = true;
-                    }
-
-                    command.Dispose();
-                }
-            }
-            finally
-            {
-                DoneWithConnection(connection, true);
-            }
-        }
-
         public int MaxDatabaseSizeInMB 
         {
             get { return m_maxSize; }

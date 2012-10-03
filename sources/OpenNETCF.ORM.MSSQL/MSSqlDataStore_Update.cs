@@ -28,10 +28,11 @@ namespace OpenNETCF.ORM
                 throw new PrimaryKeyRequiredException("A primary key is required on an Entity in order to perform Updates");
             }
 
-            if (transaction == null && connection == null) connection = GetConnection(false);
+            Boolean bInheritedConnection = connection != null;
+            if (transaction == null && connection == null)
+                connection = GetConnection(false);
             try
             {
-                CheckOrdinals(entityName);
                 CheckPrimaryKeyIndex(entityName);
 
                 OnBeforeUpdate(item, cascadeUpdates, fieldName);
@@ -204,7 +205,7 @@ namespace OpenNETCF.ORM
             }
             finally
             {
-                DoneWithConnection(connection, false);
+                if (!bInheritedConnection) DoneWithConnection(connection, false);
             }
         }
     }

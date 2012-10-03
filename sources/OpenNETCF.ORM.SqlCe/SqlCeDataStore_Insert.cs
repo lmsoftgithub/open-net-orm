@@ -23,30 +23,32 @@ namespace OpenNETCF.ORM
                 {
                     throw new EntityNotFoundException(firstitem.GetType());
                 }
-                if (transaction == null)
-                {
-                    if (connection == null) connection = GetConnection(false);
-                }
-                else
-                    connection = transaction.Connection;
+
+                Boolean bInheritedConnection = connection != null;
+                if (transaction == null && connection == null) connection = GetConnection(false);
+
                 try
                 {
-                    CheckOrdinals(entityName);
-
                     OnBeforeInsert(items, insertReferences);
                     var start = DateTime.Now;
 
                     FieldAttribute identity = null;
                     using (var command = new SqlCeCommand())
                     {
-                        command.Connection = connection as SqlCeConnection;
-                        command.Transaction = transaction as SqlCeTransaction;
+                        if (transaction == null)
+                            command.Connection = connection as SqlCeConnection;
+                        else
+                        {
+                            command.Transaction = transaction as SqlCeTransaction;
+                            command.Connection = transaction.Connection as SqlCeConnection;
+                        }
                         command.CommandText = entityName;
                         command.CommandType = CommandType.TableDirect;
 
                         using (var results = command.ExecuteResultSet(ResultSetOptions.Updatable))
                         {
                             var record = results.CreateRecord();
+                            var ordinals = GetOrdinals(entityName, results);
 
                             var keyScheme = Entities[entityName].EntityAttribute.KeyScheme;
 
@@ -72,11 +74,11 @@ namespace OpenNETCF.ORM
                                         var value = serializer.Invoke(item, new object[] { field.FieldName });
                                         if (value == null)
                                         {
-                                            record.SetValue(field.Ordinal, DBNull.Value);
+                                            record.SetValue(ordinals[field.FieldName], DBNull.Value);
                                         }
                                         else
                                         {
-                                            record.SetValue(field.Ordinal, value);
+                                            record.SetValue(ordinals[field.FieldName], value);
                                         }
                                     }
                                     else if (field.IsRowVersion)
@@ -90,18 +92,18 @@ namespace OpenNETCF.ORM
 
                                         if (value == null)
                                         {
-                                            record.SetValue(field.Ordinal, DBNull.Value);
+                                            record.SetValue(ordinals[field.FieldName], DBNull.Value);
                                         }
                                         else
                                         {
                                             var timespanTicks = ((TimeSpan)value).Ticks;
-                                            record.SetValue(field.Ordinal, timespanTicks);
+                                            record.SetValue(ordinals[field.FieldName], timespanTicks);
                                         }
                                     }
                                     else
                                     {
                                         var value = field.PropertyInfo.GetValue(item, null);
-                                        record.SetValue(field.Ordinal, value);
+                                        record.SetValue(ordinals[field.FieldName], value);
                                     }
                                 }
 
@@ -150,7 +152,7 @@ namespace OpenNETCF.ORM
                 }
                 finally
                 {
-                    DoneWithConnection(connection, false);
+                    if (!bInheritedConnection) DoneWithConnection(connection, false);
                 }
             }
         }
@@ -170,7 +172,7 @@ namespace OpenNETCF.ORM
 
                 foreach (var item in items as Array)
                 {
-                    if (this.Contains(item))
+                    if (this.Contains(item, connection))
                         this.Update(item, insertReferences, null, connection, transaction);
                     else
                         this.Insert(item, insertReferences, connection, transaction, insertReferences);
@@ -197,14 +199,11 @@ namespace OpenNETCF.ORM
             }
             EntityInfo entity = m_entities[entityName];
 
+            Boolean bInheritedConnection = connection != null;
             if (transaction == null && connection == null)
                 connection = GetConnection(false);
-            else
-                connection = transaction.Connection;
             try
             {
-                CheckOrdinals(entityName);
-
                 OnBeforeInsert(item, insertReferences);
                 var start = DateTime.Now;
 
@@ -214,12 +213,17 @@ namespace OpenNETCF.ORM
                     if (transaction == null)
                         command.Connection = connection as SqlCeConnection;
                     else
+                    {
+                        command.Connection = transaction.Connection as SqlCeConnection;
                         command.Transaction = transaction as SqlCeTransaction;
+                    }
                     command.CommandText = entity.EntityName;
                     command.CommandType = CommandType.TableDirect;
 
                     using (var results = command.ExecuteResultSet(ResultSetOptions.Updatable))
                     {
+                        var ordinals = GetOrdinals(entityName, results);
+
                         var record = results.CreateRecord();
 
                         var keyScheme = Entities[entity.EntityName].EntityAttribute.KeyScheme;
@@ -244,11 +248,11 @@ namespace OpenNETCF.ORM
                                 var value = serializer.Invoke(item, new object[] { field.FieldName });
                                 if (value == null)
                                 {
-                                    record.SetValue(field.Ordinal, DBNull.Value);
+                                    record.SetValue(ordinals[field.FieldName], DBNull.Value);
                                 }
                                 else
                                 {
-                                    record.SetValue(field.Ordinal, value);
+                                    record.SetValue(ordinals[field.FieldName], value);
                                 }
                             }
                             else if (field.IsRowVersion)
@@ -262,18 +266,18 @@ namespace OpenNETCF.ORM
 
                                 if (value == null)
                                 {
-                                    record.SetValue(field.Ordinal, DBNull.Value);
+                                    record.SetValue(ordinals[field.FieldName], DBNull.Value);
                                 }
                                 else
                                 {
                                     var timespanTicks = ((TimeSpan)value).Ticks;
-                                    record.SetValue(field.Ordinal, timespanTicks);
+                                    record.SetValue(ordinals[field.FieldName], timespanTicks);
                                 }
                             }
                             else
                             {
                                 var value = field.PropertyInfo.GetValue(item, null);
-                                record.SetValue(field.Ordinal, value);
+                                record.SetValue(ordinals[field.FieldName], value);
                             }
                         }
 
@@ -333,7 +337,7 @@ namespace OpenNETCF.ORM
             }
             finally
             {
-                DoneWithConnection(connection, false);
+                if (!bInheritedConnection) DoneWithConnection(connection, false);
             }
         }
 

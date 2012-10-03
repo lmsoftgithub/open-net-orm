@@ -29,8 +29,9 @@ namespace OpenNETCF.ORM
         public EntityAttribute EntityAttribute { get; set; }
 
         public delegate object CreateProxyDelegate(System.Data.IDataReader reader, Dictionary<string, int> ordinals);
-
         public CreateProxyDelegate CreateProxy { get; internal set; }
+
+        public System.Reflection.ConstructorInfo DefaultConstructor { get; internal set; }
 
         public string EntityName 
         {

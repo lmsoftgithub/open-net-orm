@@ -32,6 +32,7 @@
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.txtGenerateChildrenAmount = new System.Windows.Forms.TextBox();
+            this.chkInsertTransactions = new System.Windows.Forms.CheckBox();
             this.SuspendLayout();
             // 
             // txtGenerateBaseAmount
@@ -66,11 +67,22 @@
             this.txtGenerateChildrenAmount.Size = new System.Drawing.Size(100, 22);
             this.txtGenerateChildrenAmount.TabIndex = 3;
             // 
+            // chkInsertTransactions
+            // 
+            this.chkInsertTransactions.AutoSize = true;
+            this.chkInsertTransactions.Location = new System.Drawing.Point(12, 71);
+            this.chkInsertTransactions.Name = "chkInsertTransactions";
+            this.chkInsertTransactions.Size = new System.Drawing.Size(203, 21);
+            this.chkInsertTransactions.TabIndex = 5;
+            this.chkInsertTransactions.Text = "Use transactions for Inserts";
+            this.chkInsertTransactions.UseVisualStyleBackColor = true;
+            // 
             // DatabaseStructureConfigs
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(292, 268);
+            this.Controls.Add(this.chkInsertTransactions);
             this.Controls.Add(this.txtGenerateChildrenAmount);
             this.Controls.Add(this.txtGenerateBaseAmount);
             this.Controls.Add(this.label1);
@@ -88,5 +100,6 @@
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.TextBox txtGenerateChildrenAmount;
+        private System.Windows.Forms.CheckBox chkInsertTransactions;
     }
 }

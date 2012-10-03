@@ -26,11 +26,11 @@ namespace OpenNETCF.ORM
                 throw new PrimaryKeyRequiredException("A primary key is required on an Entity in order to perform Updates");
             }
 
+            Boolean bInheritedConnection = connection != null;
             if (transaction == null && connection == null)
                 connection = GetConnection(false);
             try
             {
-                CheckOrdinals(entityName);
                 CheckPrimaryKeyIndex(entityName);
 
                 OnBeforeUpdate(item, cascadeUpdates, fieldName);
@@ -49,7 +49,7 @@ namespace OpenNETCF.ORM
                     using (var results = command.ExecuteResultSet(ResultSetOptions.Scrollable | ResultSetOptions.Updatable))
                     {
                         keyValue = Entities[entityName].Fields.KeyField.PropertyInfo.GetValue(item, null);
-
+                        var ordinals = GetOrdinals(entityName, results);
                         // seek on the PK
                         var found = results.Seek(DbSeekOptions.BeforeEqual, new object[] { keyValue });
 
@@ -85,7 +85,7 @@ namespace OpenNETCF.ORM
                                         field.FieldName, entityName));
                                 }
                                 var value = serializer.Invoke(item, new object[] { field.FieldName });
-                                results.SetValue(field.Ordinal, value);
+                                results.SetValue(ordinals[field.FieldName], value);
                             }
                             else if (field.IsRowVersion)
                             {
@@ -97,12 +97,12 @@ namespace OpenNETCF.ORM
                                 var value = field.PropertyInfo.GetValue(item, null);
                                 if (value == null)
                                 {
-                                    results.SetValue(field.Ordinal, DBNull.Value);
+                                    results.SetValue(ordinals[field.FieldName], DBNull.Value);
                                 }
                                 else
                                 {
                                     var ticks = ((TimeSpan)value).Ticks;
-                                    results.SetValue(field.Ordinal, ticks);
+                                    results.SetValue(ordinals[field.FieldName], ticks);
                                 }
                             }
                             else
@@ -110,7 +110,7 @@ namespace OpenNETCF.ORM
                                 var value = field.PropertyInfo.GetValue(item, null);
 
                                 // TODO: should we update only if it's changed?  Does it really matter at this point?
-                                results.SetValue(field.Ordinal, value);
+                                results.SetValue(ordinals[field.FieldName], value);
                             }
                         }
                         results.Update();
@@ -124,7 +124,7 @@ namespace OpenNETCF.ORM
             }
             finally
             {
-                DoneWithConnection(connection, false);
+                if (!bInheritedConnection) DoneWithConnection(connection, false);
             }
         }
     }

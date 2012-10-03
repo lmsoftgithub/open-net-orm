@@ -1,61 +1,51 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Diagnostics;
-using System.Reflection;
+using System.Text;
+using System.Linq;
 using System.Data;
-using System.IO;
-using System.Runtime.InteropServices;
 using System.Data.Common;
-using FirebirdSql.Data.FirebirdClient;
+using System.Collections.Generic;
+using System.Threading;
+using System.Reflection;
+
+#if ANDROID
+// note the case difference between the System.Data.SQLite and Mono's implementation
+using SQLiteCommand = Mono.Data.Sqlite.SqliteCommand;
+using SQLiteConnection = Mono.Data.Sqlite.SqliteConnection;
+using SQLiteParameter = Mono.Data.Sqlite.SqliteParameter;
+using SQLiteDataReader = Mono.Data.Sqlite.SqliteDataReader;
+#elif WINDOWS_PHONE
+// ah the joys of an open-source project changing cases on us
+using SQLiteConnection = Community.CsharpSqlite.SQLiteClient.SqliteConnection;
+using SQLiteCommand = Community.CsharpSqlite.SQLiteClient.SqliteCommand;
+using SQLiteParameter = Community.CsharpSqlite.SQLiteClient.SqliteParameter;
+using SQLiteDataReader = Community.CsharpSqlite.SQLiteClient.SqliteDataReader;
+#else
+using System.Data.SQLite;
+#endif
 
 namespace OpenNETCF.ORM
 {
-    public partial class FirebirdDataStore
+    public partial class SQLiteDataStore
     {
+
         protected override void BulkInsert(object items, bool insertReferences, IDbConnection connection, IDbTransaction transaction)
         {
-            if (items != null)
-            {
-                if (items.GetType().IsArray)
-                {
-                    foreach (var item in items as Array)
-                    {
-                        Insert(item, insertReferences, connection, transaction, false);
-                    }
-                }
-                else if (items is System.Collections.IEnumerable)
-                {
-                    foreach (var item in items as System.Collections.IEnumerable)
-                    {
-                        Insert(item, insertReferences, connection, transaction, false);
-                    }
-                }
-            }
+            throw new NotImplementedException();
         }
 
         protected override void BulkInsertOrUpdate(object items, bool insertReferences, IDbConnection connection, IDbTransaction transaction)
         {
-            if (items != null)
-            {
-                if (items.GetType().IsArray)
-                {
-                    foreach (var item in items as Array)
-                    {
-                        InsertOrUpdate(item, insertReferences, connection, transaction);
-                    }
-                }
-                else if (items is System.Collections.IEnumerable)
-                {
-                    foreach (var item in items as System.Collections.IEnumerable)
-                    {
-                        InsertOrUpdate(item, insertReferences, connection, transaction);
-                    }
-                }
-            }
+            throw new NotImplementedException();
         }
 
+        /// <summary>
+        /// Inserts the provided entity instance into the underlying data store.
+        /// </summary>
+        /// <param name="item"></param>
+        /// <remarks>
+        /// If the entity has an identity field, calling Insert will populate that field with the identity vale vefore returning
+        /// </remarks>
         protected override void Insert(object item, bool insertReferences, IDbConnection connection, IDbTransaction transaction, bool checkUpdates)
         {
             var itemType = item.GetType();
@@ -71,25 +61,26 @@ namespace OpenNETCF.ORM
                 connection = GetConnection(false);
             try
             {
-                // CheckOrdinals(entityName);
+                //                CheckOrdinals(entityName);
+
+                OnBeforeInsert(item, insertReferences);
+                var start = DateTime.Now;
+
                 FieldAttribute identity = null;
                 var command = GetInsertCommand(entityName);
                 if (transaction == null)
-                {
-                    command.Connection = connection as FbConnection;
-                }
+                    command.Connection = connection as SQLiteConnection;
                 else
                 {
-                    command.Connection = transaction.Connection as FbConnection;
-                    command.Transaction = transaction as FbTransaction;
+                    command.Connection = transaction.Connection as SQLiteConnection;
+                    command.Transaction = transaction as SQLiteTransaction;
                 }
-
                 var keyScheme = Entities[entityName].EntityAttribute.KeyScheme;
 
                 // TODO: fill the parameters
                 foreach (var field in Entities[entityName].Fields)
                 {
-                    if ((field.IsPrimaryKey) && ((keyScheme == KeyScheme.Identity) || field.IsIdentity))
+                    if ((field.IsPrimaryKey) && (keyScheme == KeyScheme.Identity))
                     {
                         identity = field;
                         continue;
@@ -108,11 +99,11 @@ namespace OpenNETCF.ORM
                         var value = serializer.Invoke(item, new object[] { field.FieldName });
                         if (value == null)
                         {
-                            command.Parameters[String.Format("@{0}", field.FieldName)].Value = DBNull.Value;
+                            command.Parameters[field.FieldName].Value = DBNull.Value;
                         }
                         else
                         {
-                            command.Parameters[String.Format("@{0}", field.FieldName)].Value = value;
+                            command.Parameters[field.FieldName].Value = value;
                         }
                     }
                     else if (field.IsRowVersion)
@@ -126,18 +117,18 @@ namespace OpenNETCF.ORM
 
                         if (value == null)
                         {
-                            command.Parameters[String.Format("@{0}", field.FieldName)].Value = DBNull.Value;
+                            command.Parameters[field.FieldName].Value = DBNull.Value;
                         }
                         else
                         {
                             var timespanTicks = ((TimeSpan)value).Ticks;
-                            command.Parameters[String.Format("@{0}", field.FieldName)].Value = timespanTicks;
+                            command.Parameters[field.FieldName].Value = timespanTicks;
                         }
                     }
                     else
                     {
                         var value = field.PropertyInfo.GetValue(item, null);
-                        if (value != null) command.Parameters[String.Format("@{0}", field.FieldName)].Value = value;
+                        command.Parameters[field.FieldName].Value = value;
                     }
                 }
 
@@ -167,25 +158,47 @@ namespace OpenNETCF.ORM
                         var valueArray = reference.PropertyInfo.GetValue(item, null);
                         if (valueArray == null) continue;
 
+                        //var fk = Entities[entityName].Fields[reference.ReferenceField].PropertyInfo.GetValue(item, null);
                         var fk = Entities[entityName].Fields.KeyField.PropertyInfo.GetValue(item, null);
 
                         string et = null;
 
-                        // we've already enforced this to be an array when creating the store
-                        foreach (var element in valueArray as Array)
+                        if (reference.IsArray || reference.IsList)
                         {
-                            if (et == null)
+                            foreach (var element in valueArray as System.Collections.IEnumerable)
                             {
-                                et = m_entities.GetNameForType(element.GetType());
+                                if (et == null)
+                                {
+                                    et = m_entities.GetNameForType(element.GetType());
+                                }
+
+                                // Added - 2012.08.08 - Added for robustness in updates
+                                Entities[et].Fields[reference.ReferenceField].PropertyInfo.SetValue(element, fk, null);
+                                if (checkUpdates)
+                                    this.InsertOrUpdate(element, insertReferences, connection, transaction);
+                                else
+                                    this.Insert(element, insertReferences, connection, transaction, false);
                             }
-                            Entities[et].Fields[reference.ReferenceField].PropertyInfo.SetValue(element, fk, null);
-                            if (checkUpdates)
-                                this.InsertOrUpdate(element, insertReferences, connection, transaction);
-                            else
-                                this.Insert(element, insertReferences, connection, transaction, false);
+                        }
+                        else
+                        {
+                            //if (et == null)
+                            //{
+                            //    et = m_entities.GetNameForType(element.GetType());
+                            //}
+
+                            //// Added - 2012.08.08 - Added for robustness in updates
+                            //Entities[et].Fields[reference.ReferenceField].PropertyInfo.SetValue(element, fk, null);
+                            //if (checkUpdates)
+                            //    this.InsertOrUpdate(element, insertReferences, connection, transaction);
+                            //else
+                            //    this.Insert(element, insertReferences, connection, transaction, false);
+                            throw new NotImplementedException();
                         }
                     }
                 }
+                OnAfterInsert(item, insertReferences, DateTime.Now.Subtract(start), command.CommandText);
+                command.Dispose();
             }
             finally
             {

@@ -22,8 +22,9 @@ namespace OpenNETCF.ORM.Model
         [Field(DataType = System.Data.DbType.Boolean)]
         public Boolean boolfield { get; set; }
 
-        [Reference(typeof(hierarchy3a), "fid")]
-        public hierarchy3a[] level3a { get; set; }
+        [Reference(typeof(hierarchy3a), "fid", ReferenceType = ReferenceType.ManyToMany)]
+        public List<hierarchy3a> level3a { get; set; }
+        //public hierarchy3a[] level3a { get; set; }
 
         public override object CreateRandomObject(object primarykey)
         {

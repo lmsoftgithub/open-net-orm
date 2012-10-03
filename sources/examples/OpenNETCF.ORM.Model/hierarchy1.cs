@@ -19,10 +19,14 @@ namespace OpenNETCF.ORM.Model
 
         // The ConditionField will filter all child elements which have their "boolfield" column value set to true.
         [Reference(typeof(hierarchy2a), "fid", ConditionField = "boolfield", ConditionValue = true)]
-        public hierarchy2a[] level2a { get; set; }
+        public List<hierarchy2a> level2a { get; set; }
+        //public hierarchy2a[] level2a { get; set; }
+        //public List<hierarchy2a> level2a { get; set; }
 
-        [Reference(typeof(hierarchy2b), "fid")]
+        [Reference(typeof(hierarchy2b), "fid", ReferenceType=ReferenceType.ManyToMany)]
         public hierarchy2b[] level2b { get; set; }
+        //public hierarchy2b[] level2b { get; set; }
+        //public List<hierarchy2b> level2b { get; set; }
 
         public override object CreateRandomObject(object primarykey)
         {

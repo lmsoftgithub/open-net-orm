@@ -15,6 +15,7 @@ namespace OpenNETCF.ORM.MainDemo.Common
         {
             public int GenerateDataBaseAmount { get; set; }
             public int GenerateChildrenBaseAmount { get; set; }
+            public Boolean UseTransactionsForInserts { get; set; }
         }
 
         public Configuration Config { get; set; }
@@ -32,6 +33,7 @@ namespace OpenNETCF.ORM.MainDemo.Common
             {
                 this.txtGenerateBaseAmount.Text = this.Config.GenerateDataBaseAmount.ToString();
                 this.txtGenerateChildrenAmount.Text = this.Config.GenerateChildrenBaseAmount.ToString();
+                this.chkInsertTransactions.Checked = this.Config.UseTransactionsForInserts;
             }
 
             this.FormClosing += new FormClosingEventHandler(DatabaseStructureConfigs_FormClosing);
@@ -44,6 +46,7 @@ namespace OpenNETCF.ORM.MainDemo.Common
                 int intval = 0;
                 if (int.TryParse(this.txtGenerateBaseAmount.Text, out intval)) this.Config.GenerateDataBaseAmount = intval;
                 if (int.TryParse(this.txtGenerateChildrenAmount.Text, out intval)) this.Config.GenerateChildrenBaseAmount = intval;
+                this.Config.UseTransactionsForInserts = this.chkInsertTransactions.Checked;
             }
         }
     }

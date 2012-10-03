@@ -165,11 +165,11 @@ namespace OpenNETCF.ORM.MainDemo.Common
                         IBindingList bindList = (System.ComponentModel.IBindingList)Activator.CreateInstance(listType);
                         this.dgvResultSet.DataSource = bindList;
                         Application.DoEvents();
-                        //if (list.Length > 0)
-                        //{
-                        //    foreach (var item in list)
-                        //        bindList.Add(item);
-                        //}
+                        if (list.Count > 0)
+                        {
+                            foreach (var item in list)
+                                bindList.Add(item);
+                        }
                         //var conn = new System.Data.SqlServerCe.SqlCeConnection(String.Format("Data Source={0};Persist Security Info=False;Max Database Size=500;", "demo.sdf"));
                         //var items = new List<object>();
                         //using (var cmd = new System.Data.SqlServerCe.SqlCeCommand(entity.EntityName, conn))

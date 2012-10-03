@@ -71,18 +71,18 @@ namespace OpenNETCF.ORM
         void Update(object item, bool cascadeUpdates, string fieldName, bool transactional);
         void Update(object item, string fieldName);
 
-        int Delete(object item, bool cascade = false);
-        int Delete<T>(object primaryKey, bool cascade = false);
-        int Delete(Type entityType, object primaryKey, bool cascade = false);
-        int Delete<T>(bool cascade = false);
-        int Delete(Type entityType, bool cascade = false);
-        int Delete<T>(IEnumerable<FilterCondition> filters, bool cascade = false);
-        int Delete(Type entityType, IEnumerable<FilterCondition> filters, bool cascade = false);
+        int Delete(object item, bool cascade);
+        int Delete<T>(object primaryKey, bool cascade);
+        int Delete(Type entityType, object primaryKey, bool cascade);
+        int Delete<T>(bool cascade);
+        int Delete(Type entityType, bool cascade);
+        int Delete<T>(IEnumerable<FilterCondition> filters, bool cascade);
+        int Delete(Type entityType, IEnumerable<FilterCondition> filters, bool cascade);
 
-        void Drop<T>(bool cascade = false);
-        void Drop(Type entityType, bool cascade = false);
-        void DropAndCreateTable<T>(bool cascade = false);
-        void DropAndCreateTable(Type entityType, bool cascade = false);
+        void Drop<T>(bool cascade);
+        void Drop(Type entityType, bool cascade);
+        void DropAndCreateTable<T>(bool cascade);
+        void DropAndCreateTable(Type entityType, bool cascade);
 
         T[] Fetch<T>(int fetchCount) where T : new();
         T[] Fetch<T>(int fetchCount, int firstRowOffset) where T : new();

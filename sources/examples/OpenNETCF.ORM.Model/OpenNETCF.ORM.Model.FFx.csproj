@@ -5,14 +5,13 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{4C07A875-090F-4F4D-A24A-0946670F8660}</ProjectGuid>
+    <ProjectGuid>{9562E48C-C224-470C-936A-12A9C40D615C}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>OpenNETCF.ORM</RootNamespace>
-    <AssemblyName>OpenNETCF.ORM.MSSQL</AssemblyName>
+    <RootNamespace>OpenNETCF.ORM.Model</RootNamespace>
+    <AssemblyName>OpenNETCF.ORM.Model</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -22,8 +21,6 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <DocumentationFile>
-    </DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -40,8 +37,6 @@
     <DebugType>full</DebugType>
     <PlatformTarget>x86</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisIgnoreBuiltInRuleSets>true</CodeAnalysisIgnoreBuiltInRuleSets>
-    <CodeAnalysisIgnoreBuiltInRules>true</CodeAnalysisIgnoreBuiltInRules>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
     <OutputPath>bin\x86\Release\</OutputPath>
@@ -50,8 +45,6 @@
     <DebugType>pdbonly</DebugType>
     <PlatformTarget>x86</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisIgnoreBuiltInRuleSets>true</CodeAnalysisIgnoreBuiltInRuleSets>
-    <CodeAnalysisIgnoreBuiltInRules>true</CodeAnalysisIgnoreBuiltInRules>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -62,29 +55,18 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\OpenNETCF.ORM.Shared\OpenNETCF.ORM.Version.cs">
-      <Link>Properties\OpenNETCF.ORM.Version.cs</Link>
-    </Compile>
-    <Compile Include="MSSqlDataStore.cs" />
-    <Compile Include="MSSqlDataStore_Delete.cs">
-      <DependentUpon>MSSqlDataStore.cs</DependentUpon>
-    </Compile>
-    <Compile Include="MSSqlDataStore_Fetch.cs">
-      <DependentUpon>MSSqlDataStore.cs</DependentUpon>
-    </Compile>
-    <Compile Include="MSSqlDataStore_Insert.cs">
-      <DependentUpon>MSSqlDataStore.cs</DependentUpon>
-    </Compile>
-    <Compile Include="MSSqlDataStore_Select.cs">
-      <DependentUpon>MSSqlDataStore.cs</DependentUpon>
-    </Compile>
-    <Compile Include="MSSqlDataStore_Update.cs">
-      <DependentUpon>MSSqlDataStore.cs</DependentUpon>
-    </Compile>
+    <Compile Include="basictable.cs" />
+    <Compile Include="hierarchy2a.cs" />
+    <Compile Include="hierarchy2b.cs" />
+    <Compile Include="hierarchy3a.cs" />
+    <Compile Include="identitytable.cs" />
+    <Compile Include="modelbase.cs" />
+    <Compile Include="hierarchy1.cs" />
+    <Compile Include="multipk.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\OpenNETCF.ORM\OpenNETCF.ORM.FFx.csproj">
+    <ProjectReference Include="..\..\OpenNETCF.ORM\OpenNETCF.ORM.FFx.csproj">
       <Project>{6E9C7DA3-AD60-4E44-9D3A-7BBD3A20D79F}</Project>
       <Name>OpenNETCF.ORM.FFx</Name>
     </ProjectReference>
