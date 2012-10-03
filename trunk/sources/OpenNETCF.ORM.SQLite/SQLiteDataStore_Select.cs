@@ -1,19 +1,32 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Diagnostics;
-using System.Reflection;
+using System.Text;
+using System.Linq;
 using System.Data;
-using System.IO;
-using System.Runtime.InteropServices;
 using System.Data.Common;
-using FirebirdSql.Data.FirebirdClient;
+using System.Collections.Generic;
 using System.Threading;
+using System.Reflection;
+
+#if ANDROID
+// note the case difference between the System.Data.SQLite and Mono's implementation
+using SQLiteCommand = Mono.Data.Sqlite.SqliteCommand;
+using SQLiteConnection = Mono.Data.Sqlite.SqliteConnection;
+using SQLiteParameter = Mono.Data.Sqlite.SqliteParameter;
+using SQLiteDataReader = Mono.Data.Sqlite.SqliteDataReader;
+#elif WINDOWS_PHONE
+// ah the joys of an open-source project changing cases on us
+using SQLiteConnection = Community.CsharpSqlite.SQLiteClient.SqliteConnection;
+using SQLiteCommand = Community.CsharpSqlite.SQLiteClient.SqliteCommand;
+using SQLiteParameter = Community.CsharpSqlite.SQLiteClient.SqliteParameter;
+using SQLiteDataReader = Community.CsharpSqlite.SQLiteClient.SqliteDataReader;
+#else
+using System.Data.SQLite;
+#endif
 
 namespace OpenNETCF.ORM
 {
-    public partial class FirebirdDataStore
+    public partial class SQLiteDataStore
     {
 
         protected override object[] Select(Type objectType, IEnumerable<FilterCondition> filters, int fetchCount, int firstRowOffset, bool fillReferences, bool filterReferences, IDbConnection connection)
@@ -28,33 +41,38 @@ namespace OpenNETCF.ORM
             UpdateIndexCacheForType(entityName);
 
             var items = new List<object>();
-            bool tableDirect;
-
             var entity = m_entities[entityName];
 
             if (connection == null) connection = GetConnection(false);
-            FbCommand command = null;
-
-            if (UseCommandCache)
-            {
-                Monitor.Enter(CommandCache);
-            }
+            SQLiteCommand command = null;
 
             try
             {
-                command = GetSelectCommand<FbCommand, FbParameter>(entityName, filters, firstRowOffset, fetchCount, out tableDirect);
-                command.Connection = connection as FbConnection;
+                //Deprecated
+                //CheckOrdinals(entityName);
+
+                OnBeforeSelect(m_entities[entityName], filters, fillReferences);
+                var start = DateTime.Now;
+
+                bool tableDirect;
+                command = GetSelectCommand<SQLiteCommand, SQLiteParameter>(entityName, filters, firstRowOffset, fetchCount, out tableDirect);
+                command.Connection = connection as SQLiteConnection;
 
                 int searchOrdinal = -1;
-                //ResultSetOptions options = ResultSetOptions.Scrollable;
+                //    ResultSetOptions options = ResultSetOptions.Scrollable;
 
                 object matchValue = null;
                 string matchField = null;
 
-                using (var results = command.ExecuteReader(CommandBehavior.Default))
+                // TODO: we need to ensure that the search value does not exceed the length of the indexed
+                // field, else we'll get an exception on the Seek call below (see the SQL CE implementation)
+
+                using (var results = command.ExecuteReader(CommandBehavior.SingleResult))
                 {
                     if (results.HasRows)
                     {
+                        var ordinals = GetOrdinals(entityName, results);
+
                         ReferenceAttribute[] referenceFields = null;
 
                         int currentOffset = 0;
@@ -70,26 +88,7 @@ namespace OpenNETCF.ORM
 
                             if (searchOrdinal < 0)
                             {
-                                searchOrdinal = results.GetOrdinal(matchField);
-                            }
-                        }
-
-                        Dictionary<string, int> dicOrdinals = null;
-                        if (entity.CreateProxy != null)
-                        {
-                            dicOrdinals = new Dictionary<string, int>();
-                            foreach (var field in entity.Fields)
-                            {
-                                try
-                                {
-                                    if (!dicOrdinals.ContainsKey(field.FieldName))
-                                        dicOrdinals.Add(field.FieldName, results.GetOrdinal(field.FieldName));
-                                }
-                                catch
-                                {
-                                    if (!dicOrdinals.ContainsKey(field.FieldName))
-                                        dicOrdinals.Add(field.FieldName, -1);
-                                }
+                                searchOrdinal = ordinals[matchField];
                             }
                         }
 
@@ -119,7 +118,7 @@ namespace OpenNETCF.ORM
 
                                 foreach (var field in Entities[entityName].Fields)
                                 {
-                                    var value = results[field.FieldName];
+                                    var value = results[ordinals[field.FieldName]];
                                     if (value != DBNull.Value)
                                     {
                                         if (field.DataType == DbType.Object)
@@ -152,6 +151,35 @@ namespace OpenNETCF.ORM
                                             var valueAsTimeSpan = new TimeSpan((long)value);
                                             field.PropertyInfo.SetValue(item, valueAsTimeSpan, null);
                                         }
+                                        else if ((field.IsPrimaryKey) && (value is Int64) && (field.PropertyInfo.PropertyType.Equals(typeof(Int32))))
+                                        {
+                                            // SQLite automatically makes auto-increment fields 64-bit, so this works around that behavior
+                                            field.PropertyInfo.SetValue(item, Convert.ToInt32(value), null);
+                                        }
+                                        else if ((value is Int64) || (value is double))
+                                        {
+                                            // Work Around SQLite underlying storage type
+                                            if (field.PropertyInfo.PropertyType.Equals(typeof(UInt32)))
+                                            {
+                                                field.PropertyInfo.SetValue(item, Convert.ToUInt32(value), null);
+                                            }
+                                            else if (field.PropertyInfo.PropertyType.Equals(typeof(Int32)))
+                                            {
+                                                field.PropertyInfo.SetValue(item, Convert.ToInt32(value), null);
+                                            }
+                                            else if (field.PropertyInfo.PropertyType.Equals(typeof(decimal)))
+                                            {
+                                                field.PropertyInfo.SetValue(item, Convert.ToDecimal(value), null);
+                                            }
+                                            else if (field.PropertyInfo.PropertyType.Equals(typeof(float)))
+                                            {
+                                                field.PropertyInfo.SetValue(item, Convert.ToSingle(value), null);
+                                            }
+                                            else
+                                            {
+                                                field.PropertyInfo.SetValue(item, value, null);
+                                            }
+                                        }
                                         else
                                         {
                                             field.PropertyInfo.SetValue(item, value, null);
@@ -170,12 +198,12 @@ namespace OpenNETCF.ORM
                                         rowPK = value;
                                     }
                                 }
-
                             }
                             else
                             {
-                                item = entity.CreateProxy(results, dicOrdinals);
+                                item = entity.CreateProxy(results, ordinals);
                             }
+
 
                             if ((fillReferences) && (referenceFields.Length > 0))
                             {
@@ -192,6 +220,7 @@ namespace OpenNETCF.ORM
                         }
                     }
                 }
+                OnAfterSelect(m_entities[entityName], filters, fillReferences, DateTime.Now.Subtract(start), command.CommandText);
             }
             finally
             {
@@ -211,6 +240,5 @@ namespace OpenNETCF.ORM
 
             return items.ToArray();
         }
-
     }
 }

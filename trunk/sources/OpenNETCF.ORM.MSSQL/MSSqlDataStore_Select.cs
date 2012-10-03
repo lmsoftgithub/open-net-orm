@@ -65,6 +65,8 @@ namespace OpenNETCF.ORM
             var items = new List<object>();
             bool tableDirect;
 
+            var entity = m_entities[entityName];
+
             if (connection == null) connection = GetConnection(false);
             SqlCommand command = null;
 
@@ -75,8 +77,6 @@ namespace OpenNETCF.ORM
 
             try
             {
-                CheckOrdinals(entityName);
-
                 OnBeforeSelect(m_entities[entityName], filters, fillReferences);
                 var start = DateTime.Now;
 
@@ -112,6 +112,31 @@ namespace OpenNETCF.ORM
                             }
                         }
 
+                        Dictionary<string, int> dicOrdinals = null;
+                        if (entity.CreateProxy != null)
+                        {
+                            dicOrdinals = new Dictionary<string, int>();
+                            foreach (var field in entity.Fields)
+                            {
+                                try
+                                {
+                                    if (!dicOrdinals.ContainsKey(field.FieldName))
+                                        dicOrdinals.Add(field.FieldName, results.GetOrdinal(field.FieldName));
+                                }
+                                catch
+                                {
+                                    if (!dicOrdinals.ContainsKey(field.FieldName))
+                                        dicOrdinals.Add(field.FieldName, -1);
+                                }
+                            }
+                        }
+
+                        // autofill references if desired
+                        if (referenceFields == null)
+                        {
+                            referenceFields = Entities[entityName].References.ToArray();
+                        }
+
                         while (results.Read())
                         {
                             if (currentOffset < firstRowOffset)
@@ -120,68 +145,75 @@ namespace OpenNETCF.ORM
                                 continue;
                             }
 
-                            object item = Activator.CreateInstance(objectType);
+                            object item = null;
                             object rowPK = null;
 
-                            // autofill references if desired
-                            if (referenceFields == null)
+                            if (entity.CreateProxy != null)
                             {
-                                referenceFields = Entities[entityName].References.ToArray();
-                            }
+                                if (entity.DefaultConstructor == null)
+                                    item = Activator.CreateInstance(objectType);
+                                else
+                                    item = entity.DefaultConstructor.Invoke(null);
 
-                            foreach (var field in Entities[entityName].Fields)
-                            {
-                                var value = results[field.FieldName];
-                                if (value != DBNull.Value)
+                                foreach (var field in Entities[entityName].Fields)
                                 {
-                                    if (field.DataType == DbType.Object)
+                                    var value = results[field.FieldName];
+                                    if (value != DBNull.Value)
                                     {
-                                        if (fillReferences)
+                                        if (field.DataType == DbType.Object)
                                         {
-                                            // get serializer
-                                            var itemType = item.GetType();
-                                            var deserializer = GetDeserializer(itemType);
-
-                                            if (deserializer == null)
+                                            if (fillReferences)
                                             {
-                                                throw new MissingMethodException(
-                                                    string.Format("The field '{0}' requires a custom serializer/deserializer method pair in the '{1}' Entity",
-                                                    field.FieldName, entityName));
-                                            }
+                                                // get serializer
+                                                var itemType = item.GetType();
+                                                var deserializer = GetDeserializer(itemType);
 
-                                            var @object = deserializer.Invoke(item, new object[] { field.FieldName, value });
-                                            field.PropertyInfo.SetValue(item, @object, null);
+                                                if (deserializer == null)
+                                                {
+                                                    throw new MissingMethodException(
+                                                        string.Format("The field '{0}' requires a custom serializer/deserializer method pair in the '{1}' Entity",
+                                                        field.FieldName, entityName));
+                                                }
+
+                                                var @object = deserializer.Invoke(item, new object[] { field.FieldName, value });
+                                                field.PropertyInfo.SetValue(item, @object, null);
+                                            }
+                                        }
+                                        else if (field.IsRowVersion)
+                                        {
+                                            // sql stores this an 8-byte array
+                                            field.PropertyInfo.SetValue(item, BitConverter.ToInt64((byte[])value, 0), null);
+                                        }
+                                        else if (field.PropertyInfo.PropertyType.UnderlyingTypeIs<TimeSpan>())
+                                        {
+                                            // SQL Compact doesn't support Time, so we're convert to ticks in both directions
+                                            var valueAsTimeSpan = new TimeSpan((long)value);
+                                            field.PropertyInfo.SetValue(item, valueAsTimeSpan, null);
+                                        }
+                                        else
+                                        {
+                                            field.PropertyInfo.SetValue(item, value, null);
                                         }
                                     }
-                                    else if (field.IsRowVersion)
-                                    {
-                                        // sql stores this an 8-byte array
-                                        field.PropertyInfo.SetValue(item, BitConverter.ToInt64((byte[])value, 0), null);
-                                    }
-                                    else if (field.PropertyInfo.PropertyType.UnderlyingTypeIs<TimeSpan>())
-                                    {
-                                        // SQL Compact doesn't support Time, so we're convert to ticks in both directions
-                                        var valueAsTimeSpan = new TimeSpan((long)value);
-                                        field.PropertyInfo.SetValue(item, valueAsTimeSpan, null);
-                                    }
-                                    else
-                                    {
-                                        field.PropertyInfo.SetValue(item, value, null);
-                                    }
-                                }
-                                //Check if it is reference key to set, not primary.
-                                ReferenceAttribute attr = referenceFields.Where(
-                                    x => x.ReferenceField == field.FieldName).FirstOrDefault();
+                                    //Check if it is reference key to set, not primary.
+                                    ReferenceAttribute attr = referenceFields.Where(
+                                        x => x.ReferenceField == field.FieldName).FirstOrDefault();
 
-                                if (attr != null)
-                                {
-                                    rowPK = value;
-                                }
-                                if (field.IsPrimaryKey)
-                                {
-                                    rowPK = value;
+                                    if (attr != null)
+                                    {
+                                        rowPK = value;
+                                    }
+                                    if (field.IsPrimaryKey)
+                                    {
+                                        rowPK = value;
+                                    }
                                 }
                             }
+                            else
+                            {
+                                item = entity.CreateProxy(results, dicOrdinals);
+                            }
+
 
                             if ((fillReferences) && (referenceFields.Length > 0))
                             {

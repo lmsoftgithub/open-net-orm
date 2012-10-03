@@ -19,7 +19,6 @@ namespace OpenNETCF.ORM
             IsPrimaryKey = false;
             SearchOrder = FieldSearchOrder.NotSearchable;
             RequireUniqueValue = false;
-            Ordinal = -1;
             IsRowVersion = false;
             SortOrder = FieldSearchOrder.NotSearchable;
             SortSequence = 0;
@@ -41,7 +40,6 @@ namespace OpenNETCF.ORM
         public bool IsIdentity { get; set; }
         public bool IsPrimaryKey { get; set; }
         public bool RequireUniqueValue { get; set; }
-        public int Ordinal { get; set; }
         public FieldSearchOrder SearchOrder { get; set; }
         public String Default { get; set; }
         public FieldSearchOrder SortOrder { get; set; }

@@ -68,6 +68,7 @@ namespace OpenNETCF.ORM
                 throw new EntityNotFoundException(item.GetType());
             }
 
+            Boolean bInheritedConnection = connection != null;
             if (transaction == null && connection == null) connection = GetConnection(false);
             try
             {
@@ -195,7 +196,7 @@ namespace OpenNETCF.ORM
             }
             finally
             {
-                DoneWithConnection(connection, false);
+                if (!bInheritedConnection) DoneWithConnection(connection, false);
             }
         }
 

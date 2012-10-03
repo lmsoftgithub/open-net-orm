@@ -140,6 +140,9 @@
     <EmbeddedResource Include="SqlCe\frmMainSqlCe.resx">
       <DependentUpon>frmMainSqlCe.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="SQLite\frmMainSQLite.resx">
+      <DependentUpon>frmMainSQLite.cs</DependentUpon>
+    </EmbeddedResource>
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
@@ -171,9 +174,9 @@
       <Project>{6E9C7DA3-AD60-4E44-9D3A-7BBD3A20D79F}</Project>
       <Name>OpenNETCF.ORM.FFx</Name>
     </ProjectReference>
-    <ProjectReference Include="..\OpenNETCF.ORM.Model\OpenNETCF.ORM.Model.csproj">
+    <ProjectReference Include="..\OpenNETCF.ORM.Model\OpenNETCF.ORM.Model.FFx.csproj">
       <Project>{9562E48C-C224-470C-936A-12A9C40D615C}</Project>
-      <Name>OpenNETCF.ORM.Model</Name>
+      <Name>OpenNETCF.ORM.Model.FFx</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

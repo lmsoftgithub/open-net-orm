@@ -120,7 +120,8 @@ namespace OpenNETCF.ORM
             var items = new List<object>();
             bool tableDirect;
 
-            if (connection == null) connection = GetConnection(false);
+            if (connection == null) 
+                connection = GetConnection(false);
             SqlCeCommand command = null;
 
             if (UseCommandCache)
@@ -132,7 +133,6 @@ namespace OpenNETCF.ORM
             {
                 SqlEntityInfo entity = m_entities[entityName];
 
-                CheckOrdinals(entityName);
                 CheckPrimaryKeyIndex(entityName);
 
                 OnBeforeSelect(entity, filters, fillReferences);
@@ -142,10 +142,11 @@ namespace OpenNETCF.ORM
                 command.Connection = connection as SqlCeConnection;
 
                 int searchOrdinal = -1;
-                ResultSetOptions options = ResultSetOptions.None;
+                ResultSetOptions options = ResultSetOptions.Scrollable;
 
                 object matchValue = null;
                 string matchField = null;
+                bool primarykeyfilter = false;
 
                 if (tableDirect) // use index
                 {
@@ -159,7 +160,7 @@ namespace OpenNETCF.ORM
                         var sqlfilter = filter as SqlFilterCondition;
                         if ((sqlfilter != null) && (sqlfilter.PrimaryKey))
                         {
-                            searchOrdinal = entity.PrimaryKeyOrdinal;
+                            primarykeyfilter = true;
                         }
                     }
 
@@ -182,6 +183,8 @@ namespace OpenNETCF.ORM
                 {
                     if (results.HasRows)
                     {
+                        var ordinals = GetOrdinals(entityName, results);
+
                         ReferenceAttribute[] referenceFields = null;
 
                         int currentOffset = 0;
@@ -195,33 +198,14 @@ namespace OpenNETCF.ORM
                                 matchValue = (int)matchValue;
                             }
 
-                            if (searchOrdinal < 0)
-                            {
-                                searchOrdinal = results.GetOrdinal(matchField);
-                            }
+                            if (primarykeyfilter)
+                                searchOrdinal = ordinals[m_entities[entityName].Fields.KeyField.FieldName];
+                            else if (searchOrdinal < 0)
+                                searchOrdinal = ordinals[matchField];
 
                             if (tableDirect)
                             {
                                 results.Seek(DbSeekOptions.FirstEqual, new object[] { matchValue });
-                            }
-                        }
-
-                        Dictionary<string, int> dicOrdinals = null;
-                        if (entity.CreateProxy != null)
-                        {
-                            dicOrdinals = new Dictionary<string, int>();
-                            foreach (var field in entity.Fields)
-                            {
-                                try
-                                {
-                                    if (!dicOrdinals.ContainsKey(field.FieldName))
-                                        dicOrdinals.Add(field.FieldName, results.GetOrdinal(field.FieldName));
-                                }
-                                catch
-                                {
-                                    if (!dicOrdinals.ContainsKey(field.FieldName))
-                                        dicOrdinals.Add(field.FieldName, -1);
-                                }
                             }
                         }
 
@@ -267,10 +251,14 @@ namespace OpenNETCF.ORM
 
                             if (entity.CreateProxy == null)
                             {
-                                item = Activator.CreateInstance(objectType);
+                                if (entity.DefaultConstructor == null)
+                                    item = Activator.CreateInstance(objectType);
+                                else
+                                    item = entity.DefaultConstructor.Invoke(null);
+
                                 foreach (var field in entity.Fields)
                                 {
-                                    var value = results[field.Ordinal];
+                                    var value = results[ordinals[field.FieldName]];
                                     if (value != DBNull.Value)
                                     {
                                         if (field.DataType == DbType.Object)
@@ -324,7 +312,7 @@ namespace OpenNETCF.ORM
                             }
                             else
                             {
-                                item = entity.CreateProxy.Invoke(results, dicOrdinals);
+                                item = entity.CreateProxy.Invoke(results, ordinals);
                             }
 
                             if ((fillReferences) && (referenceFields.Length > 0))

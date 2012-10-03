@@ -251,7 +251,6 @@ namespace OpenNETCF.ORM
 
                 if (attribute != null)
                 {
-
                     attribute.PropertyInfo = prop;
 
                     // construct the true FieldAttribute by merging the propertyinfo and the fileldattribute overrides
@@ -265,7 +264,9 @@ namespace OpenNETCF.ORM
                         // TODO: add custom converter support here
                         attribute.DataType = prop.PropertyType.ToDbType();
                     }
-
+                    // Ensures the IsIdentity is set on the field, otherwise it could have side effects at table creation
+                    if (attribute.IsPrimaryKey & map.EntityAttribute.KeyScheme == KeyScheme.Identity)
+                        attribute.IsIdentity = true;
                     map.Fields.Add(attribute);
                     if (attribute.SortOrder != FieldSearchOrder.NotSearchable)
                         map.SortingFields.Add(attribute);
@@ -284,8 +285,10 @@ namespace OpenNETCF.ORM
 
                         reference.PropertyInfo = prop;
                         reference.IsArray = prop.PropertyType.IsArray;
-                        var filter = new TypeFilter(InterfaceFilter);
-                        reference.IsList = (prop.PropertyType.FindInterfaces(filter, "IList")).Length > 0;
+                        var interfaces = prop.PropertyType.GetInterfaces();
+                        reference.IsList = (from el in prop.PropertyType.GetInterfaces()
+                                            where el.Name.Equals("IList")
+                                            select el).FirstOrDefault() != null;
                         map.References.Add(reference);
                     }
                 }
@@ -300,18 +303,16 @@ namespace OpenNETCF.ORM
                 var parameters = methodInfo.GetParameters();
                 if (parameters.Length >= 2 && parameters[1].ParameterType.Equals(typeof(System.Collections.Generic.IDictionary<string, int>)))
                 {
-                    map.CreateProxy = (EntityInfo.CreateProxyDelegate)Delegate.CreateDelegate(typeof(EntityInfo.CreateProxyDelegate), methodInfo);
+                    map.CreateProxy = (EntityInfo.CreateProxyDelegate)Delegate.CreateDelegate(typeof(EntityInfo.CreateProxyDelegate),null, methodInfo);
                 }
             }
-            m_entities.Add(map);
-        }
 
-        private static bool InterfaceFilter(Type typeObj, Object criteriaObj)
-        {
-            if (typeObj.Name.Equals(criteriaObj.ToString()))
-                return true;
-            else
-                return false;
+            var ctor = entityType.GetConstructor(new Type[]{});
+            if (ctor != null)
+                map.DefaultConstructor = ctor;
+            else // If a createProxy exists, we'll never need the constructor, but, in order to ensure compatibility with future versions/changes... it's best to require it.
+                throw new EntityDefinitionException(entityType.ToString(), "The Type doesn't have a parameterless default constructor");
+            m_entities.Add(map);
         }
 
         public void DiscoverTypes(Assembly containingAssembly)

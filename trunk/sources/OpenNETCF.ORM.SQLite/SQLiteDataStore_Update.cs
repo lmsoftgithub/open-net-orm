@@ -1,19 +1,34 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Diagnostics;
-using System.Reflection;
+using System.Text;
+using System.Linq;
 using System.Data;
-using System.IO;
-using System.Runtime.InteropServices;
 using System.Data.Common;
-using FirebirdSql.Data.FirebirdClient;
+using System.Collections.Generic;
+using System.Threading;
+using System.Reflection;
+
+#if ANDROID
+// note the case difference between the System.Data.SQLite and Mono's implementation
+using SQLiteCommand = Mono.Data.Sqlite.SqliteCommand;
+using SQLiteConnection = Mono.Data.Sqlite.SqliteConnection;
+using SQLiteParameter = Mono.Data.Sqlite.SqliteParameter;
+using SQLiteDataReader = Mono.Data.Sqlite.SqliteDataReader;
+#elif WINDOWS_PHONE
+// ah the joys of an open-source project changing cases on us
+using SQLiteConnection = Community.CsharpSqlite.SQLiteClient.SqliteConnection;
+using SQLiteCommand = Community.CsharpSqlite.SQLiteClient.SqliteCommand;
+using SQLiteParameter = Community.CsharpSqlite.SQLiteClient.SqliteParameter;
+using SQLiteDataReader = Community.CsharpSqlite.SQLiteClient.SqliteDataReader;
+#else
+using System.Data.SQLite;
+#endif
 
 namespace OpenNETCF.ORM
 {
-    public partial class FirebirdDataStore
+    public partial class SQLiteDataStore
     {
+
         protected override void Update(object item, bool cascadeUpdates, string fieldName, IDbConnection connection, IDbTransaction transaction)
         {
             object keyValue;
@@ -43,42 +58,23 @@ namespace OpenNETCF.ORM
 
                 using (var command = GetNewCommandObject())
                 {
+                    keyValue = Entities[entityName].Fields.KeyField.PropertyInfo.GetValue(item, null);
 
                     if (transaction == null)
-                    {
-                        command.Connection = connection as FbConnection;
-                    }
+                        command.Connection = connection;
                     else
-                    {
-                        command.Connection = transaction.Connection as FbConnection;
-                        command.Transaction = transaction as FbTransaction;
-                    }
-                    StringBuilder sql = new StringBuilder();
-                    StringBuilder where = new StringBuilder(" WHERE ");
+                        command.Transaction = transaction;
 
-                    sql.Append("SELECT ");
-                    int count = Entities[entityName].Fields.Count;
-                    int keycount = Entities[entityName].Fields.KeyFields.Count;
-                    foreach (FieldAttribute field in Entities[entityName].Fields)
-                    {
-                        sql.Append(field.FieldName);
-                        if (Entities[entityName].Fields.KeyFields.Contains(field))
-                        {
-                            where.AppendFormat(" [{0}] = @{0} ", field.FieldName);
-                            keyValue = field.PropertyInfo.GetValue(item, null);
-                            command.Parameters.Add(new FbParameter(String.Format("@{0}", field.FieldName), keyValue));
-                            if (--keycount > 0) where.Append(" AND ");
-                        }
-                        if (--count > 0) sql.Append(", ");
-                    }
-                    sql.AppendFormat(" FROM {0} {1}", entityName, where.ToString());
+                    command.CommandText = string.Format("SELECT * FROM {0} WHERE [{1}] = @keyparam",
+                        entityName,
+                        Entities[entityName].Fields.KeyField.FieldName);
 
-                    command.CommandText = sql.ToString();
                     command.CommandType = CommandType.Text;
+                    command.Parameters.Add(new SQLiteParameter("@keyparam", keyValue));
 
                     var updateSQL = new StringBuilder(string.Format("UPDATE {0} SET ", entityName));
 
-                    using (var reader = command.ExecuteReader() as FbDataReader)
+                    using (var reader = command.ExecuteReader() as SQLiteDataReader)
                     {
 
                         if (!reader.HasRows)
@@ -91,7 +87,6 @@ namespace OpenNETCF.ORM
 
                         using (var insertCommand = GetNewCommandObject())
                         {
-                            keyValue = Entities[entityName].Fields.KeyField.PropertyInfo.GetValue(item, null);
                             // update the values
                             foreach (var field in Entities[entityName].Fields)
                             {
@@ -129,7 +124,7 @@ namespace OpenNETCF.ORM
                                     else
                                     {
                                         updateSQL.AppendFormat("{0}=@{0}, ", field.FieldName);
-                                        insertCommand.Parameters.Add(new FbParameter("@" + field.FieldName, value));
+                                        insertCommand.Parameters.Add(new SQLiteParameter("@" + field.FieldName, value));
                                     }
                                 }
                                 else if (field.PropertyInfo.PropertyType.UnderlyingTypeIs<TimeSpan>())
@@ -145,14 +140,14 @@ namespace OpenNETCF.ORM
                                     {
                                         var ticks = ((TimeSpan)value).Ticks;
                                         updateSQL.AppendFormat("{0}=@{0}, ", field.FieldName);
-                                        insertCommand.Parameters.Add(new FbParameter("@" + field.FieldName, ticks));
+                                        insertCommand.Parameters.Add(new SQLiteParameter("@" + field.FieldName, ticks));
                                     }
                                 }
                                 else
                                 {
                                     var value = field.PropertyInfo.GetValue(item, null);
-                                    var readerval = reader[field.FieldName];
-                                    if (DBNull.Value.Equals(readerval) || !value.Equals(readerval))
+
+                                    if (reader[field.FieldName] != value)
                                     {
                                         changeDetected = true;
 
@@ -163,47 +158,36 @@ namespace OpenNETCF.ORM
                                         else
                                         {
                                             updateSQL.AppendFormat("{0}=@{0}, ", field.FieldName);
-                                            insertCommand.Parameters.Add(new FbParameter("@" + field.FieldName, value));
+                                            insertCommand.Parameters.Add(new SQLiteParameter("@" + field.FieldName, value));
                                         }
                                     }
                                 }
                             }
-                            reader.Close();
 
                             // only execute if a change occurred
                             if (changeDetected)
                             {
                                 // remove the trailing comma and append the filter
                                 updateSQL.Length -= 2;
-                                updateSQL.Append(where.ToString());
-                                foreach (FieldAttribute field in Entities[entityName].Fields.KeyFields)
-                                {
-                                    keyValue = field.PropertyInfo.GetValue(item, null);
-                                    insertCommand.Parameters.Add(new FbParameter(String.Format("@{0}", field.FieldName), keyValue));
-                                }
+                                updateSQL.AppendFormat(" WHERE {0} = @keyparam", Entities[entityName].Fields.KeyField.FieldName);
+                                insertCommand.Parameters.Add(new SQLiteParameter("@keyparam", keyValue));
                                 insertCommand.CommandText = updateSQL.ToString();
-                                if (transaction == null)
-                                {
-                                    insertCommand.Connection = connection as FbConnection;
-                                }
-                                else
-                                {
-                                    insertCommand.Connection = transaction.Connection as FbConnection;
-                                    insertCommand.Transaction = transaction as FbTransaction;
-                                }
+                                insertCommand.Connection = connection;
                                 insertCommand.ExecuteNonQuery();
                             }
-
-                            if (cascadeUpdates)
-                            {
-                                CascadeUpdates(item, fieldName, keyValue, m_entities[entityName], connection, transaction);
-                            }
-                            if (changeDetected)
-                                OnAfterUpdate(item, cascadeUpdates, fieldName, DateTime.Now.Subtract(start), updateSQL.ToString());
-                            else
-                                OnAfterUpdate(item, cascadeUpdates, fieldName, DateTime.Now.Subtract(start), null);
                         }
                     }
+
+                    if (cascadeUpdates)
+                    {
+                        CascadeUpdates(item, fieldName, keyValue, m_entities[entityName], connection, transaction);
+                    }
+
+                    if (changeDetected)
+                        OnAfterUpdate(item, cascadeUpdates, fieldName, DateTime.Now.Subtract(start), updateSQL.ToString());
+                    else
+                        OnAfterUpdate(item, cascadeUpdates, fieldName, DateTime.Now.Subtract(start), null);
+
                 }
             }
             finally
