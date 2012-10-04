@@ -57,13 +57,41 @@
     <CodeAnalysisIgnoreBuiltInRuleSets>false</CodeAnalysisIgnoreBuiltInRuleSets>
     <CodeAnalysisIgnoreBuiltInRules>false</CodeAnalysisIgnoreBuiltInRules>
   </PropertyGroup>
+  <Choose>
+    <When Condition=" '$(PlatformTarget)' == 'x86' ">
+      <ItemGroup>
+        <Reference Include="System.Data.SQLite, Version=1.0.79.0, Culture=neutral, PublicKeyToken=db937bc2d44ff139, processorArchitecture=x86">
+          <SpecificVersion>False</SpecificVersion>
+          <HintPath>references\FFx\x32\System.Data.SQLite.dll</HintPath>
+          <Private>True</Private>
+        </Reference>
+     </ItemGroup>
+    </When>
+    <When Condition=" '$(PlatformTarget)' != 'x86' ">
+      <ItemGroup>
+        <Reference Include="System.Data.SQLite, Version=1.0.79.0, Culture=neutral, PublicKeyToken=db937bc2d44ff139, processorArchitecture=ia64">
+          <SpecificVersion>False</SpecificVersion>
+          <HintPath>references\FFx\x64\System.Data.SQLite.dll</HintPath>
+          <Private>True</Private>
+        </Reference>
+      </ItemGroup>
+    </When>
+  </Choose>
+  <Choose>
+    <When Condition=" '$(PlatformTarget)' == 'x86' ">
+      <ItemGroup>
+        <MyReferenceFiles Include="references\FFx\x32\SQLite.Interop.dll"/>
+     </ItemGroup>
+    </When>
+    <When Condition=" '$(PlatformTarget)' != 'x86' ">
+      <ItemGroup>
+        <MyReferenceFiles Include="references\FFx\x64\SQLite.Interop.dll"/>
+      </ItemGroup>
+    </When>
+  </Choose>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Data.SQLite, Version=1.0.66.0, Culture=neutral, PublicKeyToken=db937bc2d44ff139, processorArchitecture=x86">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>references\FFx\x32\System.Data.SQLite.dll</HintPath>
-    </Reference>
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="System.Data" />
@@ -91,11 +119,6 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="SQLite.Interop.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\OpenNETCF.ORM\OpenNETCF.ORM.FFx.csproj">
       <Project>{6E9C7DA3-AD60-4E44-9D3A-7BBD3A20D79F}</Project>
       <Name>OpenNETCF.ORM.FFx</Name>
@@ -107,6 +130,10 @@
   <Target Name="BeforeBuild">
   </Target>
   <Target Name="AfterBuild">
+</Target>
+  <Target Name="CopyFiles">
+	<Copy SourceFiles="@(MyReferenceFiles)"
+		  DestinationFiles="@(MyReferenceFiles->'$(OutputPath)%(Filename)%(Extension)')"/>
   </Target>
   -->
 </Project>

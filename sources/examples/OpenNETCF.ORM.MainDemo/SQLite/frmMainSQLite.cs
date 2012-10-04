@@ -34,6 +34,14 @@ namespace OpenNETCF.ORM.MainDemo.SQLite
                     if (this._DataStore != null) this._DataStore.Dispose();
 
                     this._DataStore = new SQLiteDataStore(this.txtFileName.Text);
+                    if (chkAutoVacuum.Checked)
+                        this._DataStore.SetAutoVacuumBehavior(SQLiteDataStore.AutoVacuum.FULL);
+                    else
+                        this._DataStore.SetAutoVacuumBehavior(SQLiteDataStore.AutoVacuum.OFF);
+                    if (chkTransactionSynchronization.Checked)
+                        this._DataStore.SetTransactionSynchronization(SQLiteDataStore.TransactionSynchronization.FULL);
+                    else
+                        this._DataStore.SetTransactionSynchronization(SQLiteDataStore.TransactionSynchronization.OFF);
                     this._DataStore.MaxDatabaseSizeInMB = 500;
                     this._DataStore.ConnectionBehavior = ConnectionBehavior.Persistent;
                     this._DataStore.DiscoverTypes(System.Reflection.Assembly.GetAssembly(typeof(OpenNETCF.ORM.Model.basictable)));
@@ -68,6 +76,14 @@ namespace OpenNETCF.ORM.MainDemo.SQLite
                         if (this._DataStore != null) this._DataStore.Dispose();
 
                         this._DataStore = new SQLiteDataStore(this.txtFileName.Text);
+                        if (chkAutoVacuum.Checked)
+                            this._DataStore.SetAutoVacuumBehavior(SQLiteDataStore.AutoVacuum.FULL);
+                        else
+                            this._DataStore.SetAutoVacuumBehavior(SQLiteDataStore.AutoVacuum.OFF);
+                        if (chkTransactionSynchronization.Checked)
+                            this._DataStore.SetTransactionSynchronization(SQLiteDataStore.TransactionSynchronization.FULL);
+                        else
+                            this._DataStore.SetTransactionSynchronization(SQLiteDataStore.TransactionSynchronization.OFF);
                         this._DataStore.MaxDatabaseSizeInMB = 500;
                         this._DataStore.ConnectionBehavior = ConnectionBehavior.Persistent;
                         this._DataStore.DiscoverTypes(System.Reflection.Assembly.GetAssembly(typeof(OpenNETCF.ORM.Model.basictable)));

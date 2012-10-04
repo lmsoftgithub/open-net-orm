@@ -109,6 +109,10 @@
     <Compile Include="Constants\DefaultType.cs" />
     <Compile Include="Constants\FieldSearchOrder.cs" />
     <Compile Include="DataStore.cs" />
+    <Compile Include="DynamicEntities\DynamicEntity.cs" />
+    <Compile Include="DynamicEntities\DynamicEntityDefinition.cs" />
+    <Compile Include="DynamicEntities\FieldCollection.cs" />
+    <Compile Include="DynamicEntities\FieldValue.cs" />
     <Compile Include="Entity.cs" />
     <Compile Include="EntityInfo.cs" />
     <Compile Include="EntityInfoCollection.cs" />
@@ -145,6 +149,7 @@
       <Install>true</Install>
     </BootstrapperPackage>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

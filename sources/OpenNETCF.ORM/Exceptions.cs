@@ -35,6 +35,10 @@ namespace OpenNETCF.ORM
             : base(string.Format("Entity Type '{0}' not found. Is your Store up to date?", type.Name))
         {
         }
+        public EntityNotFoundException(String name)
+            : base(string.Format("Entity Type '{0}' not found. Is your Store up to date?", name))
+        {
+        }
     }
 
     public class MutiplePrimaryKeyException : Exception

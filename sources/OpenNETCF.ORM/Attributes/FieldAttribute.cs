@@ -10,8 +10,9 @@ namespace OpenNETCF.ORM
     [AttributeUsage(AttributeTargets.Property)]
     public class FieldAttribute : Attribute
     {
-        private DbType m_type;
-        
+        private DbType db_type;
+        private Type m_type;
+
         public FieldAttribute()
         {
             // set up defaults
@@ -56,11 +57,21 @@ namespace OpenNETCF.ORM
 
         public DbType DataType 
         {
-            get { return m_type; }
+            get { return db_type; }
             set
             {
-                m_type = value;
+                db_type = value;
+                m_type = Extensions.ToManagedType(db_type);
                 DataTypeIsValid = true;
+            }
+        }
+
+        public Type ManagedDataType
+        {
+            get { return m_type; }
+            internal set
+            {
+                m_type = value;
             }
         }
 

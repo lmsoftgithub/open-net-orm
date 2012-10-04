@@ -45,6 +45,12 @@ namespace OpenNETCF.ORM
             FULL = 2
         }
 
+        public enum AutoVacuum
+        {
+            OFF = 0,
+            FULL = 1
+        }
+
         protected SQLiteDataStore()
             : base()
         {
@@ -481,7 +487,7 @@ namespace OpenNETCF.ORM
             }
         }
 
-        protected virtual TransactionSynchronization SetTransactionSynchronization(TransactionSynchronization value)
+        public virtual TransactionSynchronization SetTransactionSynchronization(TransactionSynchronization value)
         {
             TransactionSynchronization result = TransactionSynchronization.OFF;
             var connection = GetConnection(true);
@@ -493,8 +499,10 @@ namespace OpenNETCF.ORM
 
                     command.CommandText = string.Format("PRAGMA synchronous = {0}", (int)value);
 
-                    var i = (long)command.ExecuteScalar();
+                    command.ExecuteNonQuery();
 
+                    command.CommandText = string.Format("PRAGMA synchronous");
+                    var i = command.ExecuteScalar();
                     result = (TransactionSynchronization)Enum.Parse(typeof(TransactionSynchronization), i.ToString(), true);
                 }
 
@@ -503,6 +511,33 @@ namespace OpenNETCF.ORM
             finally
             {
                  DoneWithConnection(connection, true);
+            }
+        }
+
+        public virtual AutoVacuum SetAutoVacuumBehavior(AutoVacuum value)
+        {
+            AutoVacuum result = AutoVacuum.OFF;
+            var connection = GetConnection(true);
+            try
+            {
+                using (var command = GetNewCommandObject())
+                {
+                    command.Connection = connection;
+                    command.CommandType = CommandType.Text;
+                    command.CommandText = string.Format("PRAGMA auto_vacuum = {0}", (int)value);
+
+                    command.ExecuteNonQuery();
+
+                    command.CommandText = string.Format("PRAGMA auto_vacuum");
+                    var i = command.ExecuteScalar();
+                    result = (AutoVacuum)Enum.Parse(typeof(AutoVacuum), i.ToString(), true);
+                }
+
+                return result;
+            }
+            finally
+            {
+                DoneWithConnection(connection, true);
             }
         }
     }

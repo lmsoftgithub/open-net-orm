@@ -29,10 +29,13 @@
         private void InitializeComponent()
         {
             this.grpDBTests = new System.Windows.Forms.GroupBox();
+            this.btnRefresh = new System.Windows.Forms.Button();
+            this.pnlModified = new System.Windows.Forms.Panel();
             this.btnReport = new System.Windows.Forms.Button();
             this.lblMessage = new System.Windows.Forms.Label();
             this.lblItemType = new System.Windows.Forms.Label();
             this.grpTableActions = new System.Windows.Forms.GroupBox();
+            this.chkTransactional = new System.Windows.Forms.CheckBox();
             this.chkFillReferences = new System.Windows.Forms.CheckBox();
             this.chkFilterReferences = new System.Windows.Forms.CheckBox();
             this.chkCascadeTableActions = new System.Windows.Forms.CheckBox();
@@ -63,9 +66,7 @@
             this.cmbFields = new System.Windows.Forms.ComboBox();
             this.dgvResultSet = new System.Windows.Forms.DataGridView();
             this.cmbTable = new System.Windows.Forms.ComboBox();
-            this.pnlModified = new System.Windows.Forms.Panel();
-            this.chkTransactional = new System.Windows.Forms.CheckBox();
-            this.btnRefresh = new System.Windows.Forms.Button();
+            this.chkLimitResults = new System.Windows.Forms.CheckBox();
             this.grpDBTests.SuspendLayout();
             this.grpTableActions.SuspendLayout();
             this.grpItemActions.SuspendLayout();
@@ -74,6 +75,7 @@
             // 
             // grpDBTests
             // 
+            this.grpDBTests.Controls.Add(this.chkLimitResults);
             this.grpDBTests.Controls.Add(this.btnRefresh);
             this.grpDBTests.Controls.Add(this.pnlModified);
             this.grpDBTests.Controls.Add(this.btnReport);
@@ -98,15 +100,35 @@
             this.grpDBTests.Dock = System.Windows.Forms.DockStyle.Fill;
             this.grpDBTests.Location = new System.Drawing.Point(0, 0);
             this.grpDBTests.Name = "grpDBTests";
-            this.grpDBTests.Size = new System.Drawing.Size(655, 493);
+            this.grpDBTests.Size = new System.Drawing.Size(655, 500);
             this.grpDBTests.TabIndex = 0;
             this.grpDBTests.TabStop = false;
             this.grpDBTests.Text = "Database Tests";
             // 
+            // btnRefresh
+            // 
+            this.btnRefresh.Location = new System.Drawing.Point(125, 18);
+            this.btnRefresh.Name = "btnRefresh";
+            this.btnRefresh.Size = new System.Drawing.Size(143, 23);
+            this.btnRefresh.TabIndex = 32;
+            this.btnRefresh.Text = "Refresh Interface";
+            this.btnRefresh.UseVisualStyleBackColor = true;
+            this.btnRefresh.Click += new System.EventHandler(this.btnRefresh_Click);
+            // 
+            // pnlModified
+            // 
+            this.pnlModified.BackColor = System.Drawing.Color.Red;
+            this.pnlModified.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
+            this.pnlModified.Location = new System.Drawing.Point(6, 400);
+            this.pnlModified.Name = "pnlModified";
+            this.pnlModified.Size = new System.Drawing.Size(21, 21);
+            this.pnlModified.TabIndex = 31;
+            this.pnlModified.Visible = false;
+            // 
             // btnReport
             // 
             this.btnReport.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnReport.Location = new System.Drawing.Point(629, 469);
+            this.btnReport.Location = new System.Drawing.Point(629, 476);
             this.btnReport.Name = "btnReport";
             this.btnReport.Size = new System.Drawing.Size(19, 19);
             this.btnReport.TabIndex = 30;
@@ -117,7 +139,7 @@
             // 
             this.lblMessage.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.lblMessage.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.lblMessage.Location = new System.Drawing.Point(3, 467);
+            this.lblMessage.Location = new System.Drawing.Point(3, 474);
             this.lblMessage.Margin = new System.Windows.Forms.Padding(5, 0, 5, 0);
             this.lblMessage.Name = "lblMessage";
             this.lblMessage.Size = new System.Drawing.Size(649, 23);
@@ -146,12 +168,22 @@
             this.grpTableActions.Controls.Add(this.btnNew);
             this.grpTableActions.Controls.Add(this.btnSelectFiltered);
             this.grpTableActions.Controls.Add(this.btnSelectAll);
-            this.grpTableActions.Location = new System.Drawing.Point(6, 253);
+            this.grpTableActions.Location = new System.Drawing.Point(6, 280);
             this.grpTableActions.Name = "grpTableActions";
             this.grpTableActions.Size = new System.Drawing.Size(414, 114);
             this.grpTableActions.TabIndex = 26;
             this.grpTableActions.TabStop = false;
             this.grpTableActions.Text = "Table Actions";
+            // 
+            // chkTransactional
+            // 
+            this.chkTransactional.AutoSize = true;
+            this.chkTransactional.Location = new System.Drawing.Point(178, 87);
+            this.chkTransactional.Name = "chkTransactional";
+            this.chkTransactional.Size = new System.Drawing.Size(116, 21);
+            this.chkTransactional.TabIndex = 33;
+            this.chkTransactional.Text = "Transactional";
+            this.chkTransactional.UseVisualStyleBackColor = true;
             // 
             // chkFillReferences
             // 
@@ -270,7 +302,7 @@
             this.grpItemActions.Controls.Add(this.btnInsertOrUpdate);
             this.grpItemActions.Controls.Add(this.btnInsert);
             this.grpItemActions.Controls.Add(this.btnDelete);
-            this.grpItemActions.Location = new System.Drawing.Point(426, 253);
+            this.grpItemActions.Location = new System.Drawing.Point(425, 280);
             this.grpItemActions.Name = "grpItemActions";
             this.grpItemActions.Size = new System.Drawing.Size(223, 114);
             this.grpItemActions.TabIndex = 23;
@@ -430,11 +462,11 @@
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.dgvResultSet.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.dgvResultSet.Location = new System.Drawing.Point(6, 373);
+            this.dgvResultSet.Location = new System.Drawing.Point(6, 400);
             this.dgvResultSet.Name = "dgvResultSet";
             this.dgvResultSet.ReadOnly = true;
             this.dgvResultSet.RowTemplate.Height = 24;
-            this.dgvResultSet.Size = new System.Drawing.Size(643, 89);
+            this.dgvResultSet.Size = new System.Drawing.Size(643, 69);
             this.dgvResultSet.TabIndex = 2;
             // 
             // cmbTable
@@ -446,44 +478,26 @@
             this.cmbTable.Size = new System.Drawing.Size(261, 24);
             this.cmbTable.TabIndex = 0;
             // 
-            // pnlModified
+            // chkLimitResults
             // 
-            this.pnlModified.BackColor = System.Drawing.Color.Red;
-            this.pnlModified.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
-            this.pnlModified.Location = new System.Drawing.Point(6, 373);
-            this.pnlModified.Name = "pnlModified";
-            this.pnlModified.Size = new System.Drawing.Size(21, 21);
-            this.pnlModified.TabIndex = 31;
-            this.pnlModified.Visible = false;
-            // 
-            // chkTransactional
-            // 
-            this.chkTransactional.AutoSize = true;
-            this.chkTransactional.Location = new System.Drawing.Point(178, 87);
-            this.chkTransactional.Name = "chkTransactional";
-            this.chkTransactional.Size = new System.Drawing.Size(116, 21);
-            this.chkTransactional.TabIndex = 33;
-            this.chkTransactional.Text = "Transactional";
-            this.chkTransactional.UseVisualStyleBackColor = true;
-            // 
-            // btnRefresh
-            // 
-            this.btnRefresh.Location = new System.Drawing.Point(125, 18);
-            this.btnRefresh.Name = "btnRefresh";
-            this.btnRefresh.Size = new System.Drawing.Size(143, 23);
-            this.btnRefresh.TabIndex = 32;
-            this.btnRefresh.Text = "Refresh Interface";
-            this.btnRefresh.UseVisualStyleBackColor = true;
-            this.btnRefresh.Click += new System.EventHandler(this.btnRefresh_Click);
+            this.chkLimitResults.AutoSize = true;
+            this.chkLimitResults.Checked = true;
+            this.chkLimitResults.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.chkLimitResults.Location = new System.Drawing.Point(9, 250);
+            this.chkLimitResults.Name = "chkLimitResults";
+            this.chkLimitResults.Size = new System.Drawing.Size(213, 21);
+            this.chkLimitResults.TabIndex = 33;
+            this.chkLimitResults.Text = "Max 10.000 displayed results";
+            this.chkLimitResults.UseVisualStyleBackColor = true;
             // 
             // DatabaseTests
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.Controls.Add(this.grpDBTests);
-            this.MinimumSize = new System.Drawing.Size(655, 420);
+            this.MinimumSize = new System.Drawing.Size(655, 500);
             this.Name = "DatabaseTests";
-            this.Size = new System.Drawing.Size(655, 493);
+            this.Size = new System.Drawing.Size(655, 500);
             this.grpDBTests.ResumeLayout(false);
             this.grpDBTests.PerformLayout();
             this.grpTableActions.ResumeLayout(false);
@@ -535,5 +549,6 @@
         private System.Windows.Forms.Panel pnlModified;
         private System.Windows.Forms.CheckBox chkTransactional;
         private System.Windows.Forms.Button btnRefresh;
+        private System.Windows.Forms.CheckBox chkLimitResults;
     }
 }

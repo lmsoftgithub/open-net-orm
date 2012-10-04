@@ -12,11 +12,13 @@ namespace OpenNETCF.ORM
 
         protected override void BulkInsert(object items, bool insertReferences, IDbConnection connection, IDbTransaction transaction)
         {
-
-            if (items != null && items.GetType().IsArray && (items as Array).Length > 0)
+            if (items != null && items.GetType() is System.Collections.IEnumerable)
             {
-                object firstitem = (items as Array).GetValue(0);
+                var enumerator = (items as System.Collections.IEnumerable).GetEnumerator();
+                if (enumerator.Current == null) enumerator.MoveNext();
+                object firstitem = enumerator.Current;
                 var itemType = firstitem.GetType();
+                enumerator.Reset();
                 string entityName = m_entities.GetNameForType(itemType);
 
                 if (entityName == null)
@@ -52,7 +54,7 @@ namespace OpenNETCF.ORM
 
                             var keyScheme = Entities[entityName].EntityAttribute.KeyScheme;
 
-                            foreach (object item in items as Array)
+                            foreach (object item in items as System.Collections.IEnumerable)
                             {
                                 foreach (var field in Entities[entityName].Fields)
                                 {
@@ -314,20 +316,26 @@ namespace OpenNETCF.ORM
 
                                 string et = null;
 
-                                // we've already enforced this to be an array when creating the store
-                                foreach (var element in valueArray as Array)
+                                if (reference.IsArray || reference.IsList)
                                 {
-                                    if (et == null)
+                                    foreach (var element in valueArray as System.Collections.IEnumerable)
                                     {
-                                        et = m_entities.GetNameForType(element.GetType());
-                                    }
+                                        if (et == null)
+                                        {
+                                            et = m_entities.GetNameForType(element.GetType());
+                                        }
 
-                                    // Added - 2012.08.08 - Replacing the old code to handle existing objects which were added
-                                    Entities[et].Fields[reference.ReferenceField].PropertyInfo.SetValue(element, fk, null);
-                                    if (checkUpdates)
-                                        this.InsertOrUpdate(element, insertReferences, connection, transaction);
-                                    else
-                                        this.Insert(element, insertReferences, connection, transaction, checkUpdates);
+                                        // Added - 2012.08.08 - Replacing the old code to handle existing objects which were added
+                                        Entities[et].Fields[reference.ReferenceField].PropertyInfo.SetValue(element, fk, null);
+                                        if (checkUpdates)
+                                            this.InsertOrUpdate(element, insertReferences, connection, transaction);
+                                        else
+                                            this.Insert(element, insertReferences, connection, transaction, checkUpdates);
+                                    }
+                                }
+                                else
+                                {
+                                    throw new NotImplementedException();
                                 }
                             }
                         }

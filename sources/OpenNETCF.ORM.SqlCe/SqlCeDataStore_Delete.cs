@@ -36,7 +36,8 @@ namespace OpenNETCF.ORM
                         if (!reference.CascadeDelete) continue;
                         var filters = new List<FilterCondition>();
                         filters.Add(new FilterCondition(reference.ReferenceField, primaryKey, FilterCondition.FilterOperator.Equals));
-                        result += Delete(reference.ReferenceEntityType, filters, connection, transaction, cascade);
+                        var refname = m_entities.GetNameForType(reference.ReferenceEntityType);
+                        result += Delete(refname, filters, connection, transaction, cascade);
                     }
                 }
 
