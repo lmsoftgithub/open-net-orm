@@ -24,11 +24,13 @@ namespace OpenNETCF.ORM
         void AddType(Type entityType);
 
         void DiscoverTypes(Assembly containingAssembly);
+        void RegisterEntity(EntityInfo entity);
 
         void CreateStore();
         void DeleteStore();
         bool StoreExists { get; }
         void EnsureCompatibility();
+        bool HasConnection { get; }
 
 
         EntityInfoCollection<EntityInfo> GetEntities();
@@ -64,7 +66,12 @@ namespace OpenNETCF.ORM
         object[] Select(Type entityType, bool fillReferences, bool filterReferences);
         object[] Select(Type entityType, object primaryKey, bool fillReferences, bool filterReferences);
         object[] Select(Type objectType, IEnumerable<FilterCondition> filters, bool fillReferences);
-        object[] Select(Type objectType, IEnumerable<FilterCondition> filters, bool fillReferences, bool filterReferences); 
+        object[] Select(Type objectType, IEnumerable<FilterCondition> filters, bool fillReferences, bool filterReferences);
+
+        object[] Select(String entityName);
+        object[] Select(String entityName, bool fillReferences);
+        object[] Select(String entityName, object primaryKey, bool fillReferences);
+        object[] Select(String entityName, IEnumerable<FilterCondition> filters, bool fillReferences);
 
         void Update(object item);
         void Update(object item, bool cascadeUpdates, string fieldName);
@@ -78,6 +85,8 @@ namespace OpenNETCF.ORM
         int Delete(Type entityType, bool cascade);
         int Delete<T>(IEnumerable<FilterCondition> filters, bool cascade);
         int Delete(Type entityType, IEnumerable<FilterCondition> filters, bool cascade);
+        int Delete(String entityName, bool cascade);
+        int Delete(String entityName, IEnumerable<FilterCondition> filters, bool cascade);
 
         void Drop<T>(bool cascade);
         void Drop(Type entityType, bool cascade);

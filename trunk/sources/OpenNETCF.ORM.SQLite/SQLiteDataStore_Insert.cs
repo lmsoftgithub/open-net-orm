@@ -31,12 +31,38 @@ namespace OpenNETCF.ORM
 
         protected override void BulkInsert(object items, bool insertReferences, IDbConnection connection, IDbTransaction transaction)
         {
-            throw new NotImplementedException();
+            if (items != null)
+            {
+                if (items is System.Collections.IEnumerable)
+                {
+                    foreach (var item in items as System.Collections.IEnumerable)
+                    {
+                        Insert(item, insertReferences, connection, transaction, false);
+                    }
+                }
+                else
+                {
+                    throw new NotSupportedException(String.Format("The given item collection type is not supported: {0}", items.GetType()));
+                }
+            }
         }
 
         protected override void BulkInsertOrUpdate(object items, bool insertReferences, IDbConnection connection, IDbTransaction transaction)
         {
-            throw new NotImplementedException();
+            if (items != null)
+            {
+                if (items is System.Collections.IEnumerable)
+                {
+                    foreach (var item in items as System.Collections.IEnumerable)
+                    {
+                        InsertOrUpdate(item, insertReferences, connection, transaction);
+                    }
+                }
+                else
+                {
+                    throw new NotSupportedException(String.Format("The given item collection type is not supported: {0}", items.GetType()));
+                }
+            }
         }
 
         /// <summary>

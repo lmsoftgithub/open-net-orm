@@ -29,6 +29,7 @@
         private void InitializeComponent()
         {
             this.splitMain = new System.Windows.Forms.SplitContainer();
+            this.dbsStructure = new OpenNETCF.ORM.MainDemo.Common.DatabaseStructure();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.lblCreatedOn = new System.Windows.Forms.Label();
             this.label4 = new System.Windows.Forms.Label();
@@ -39,12 +40,18 @@
             this.label1 = new System.Windows.Forms.Label();
             this.btnOpenFile = new System.Windows.Forms.Button();
             this.txtFileName = new System.Windows.Forms.TextBox();
-            this.dbsStructure = new OpenNETCF.ORM.MainDemo.Common.DatabaseStructure();
+            this.tabTests = new System.Windows.Forms.TabControl();
+            this.tabPage1 = new System.Windows.Forms.TabPage();
             this.dbtTests = new OpenNETCF.ORM.MainDemo.Common.DatabaseTests();
+            this.tabPage2 = new System.Windows.Forms.TabPage();
+            this.deTests = new OpenNETCF.ORM.MainDemo.Common.DynamicEntityTests();
             this.splitMain.Panel1.SuspendLayout();
             this.splitMain.Panel2.SuspendLayout();
             this.splitMain.SuspendLayout();
             this.groupBox1.SuspendLayout();
+            this.tabTests.SuspendLayout();
+            this.tabPage1.SuspendLayout();
+            this.tabPage2.SuspendLayout();
             this.SuspendLayout();
             // 
             // splitMain
@@ -65,10 +72,21 @@
             // 
             // splitMain.Panel2
             // 
-            this.splitMain.Panel2.Controls.Add(this.dbtTests);
+            this.splitMain.Panel2.Controls.Add(this.tabTests);
             this.splitMain.Size = new System.Drawing.Size(1012, 568);
             this.splitMain.SplitterDistance = 370;
             this.splitMain.TabIndex = 0;
+            // 
+            // dbsStructure
+            // 
+            this.dbsStructure.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.dbsStructure.Location = new System.Drawing.Point(3, 174);
+            this.dbsStructure.Name = "dbsStructure";
+            this.dbsStructure.Size = new System.Drawing.Size(364, 394);
+            this.dbsStructure.StopGenerator = false;
+            this.dbsStructure.TabIndex = 12;
             // 
             // groupBox1
             // 
@@ -133,11 +151,11 @@
             // 
             // btnCreateDataStore
             // 
-            this.btnCreateDataStore.Location = new System.Drawing.Point(258, 14);
+            this.btnCreateDataStore.Location = new System.Drawing.Point(215, 14);
             this.btnCreateDataStore.Name = "btnCreateDataStore";
-            this.btnCreateDataStore.Size = new System.Drawing.Size(75, 33);
+            this.btnCreateDataStore.Size = new System.Drawing.Size(118, 33);
             this.btnCreateDataStore.TabIndex = 0;
-            this.btnCreateDataStore.Text = "Create";
+            this.btnCreateDataStore.Text = "Create / Update";
             this.btnCreateDataStore.UseVisualStyleBackColor = true;
             this.btnCreateDataStore.Click += new System.EventHandler(this.btnCreateDataStore_Click);
             // 
@@ -167,24 +185,55 @@
             this.txtFileName.Size = new System.Drawing.Size(311, 22);
             this.txtFileName.TabIndex = 8;
             // 
-            // dbsStructure
+            // tabTests
             // 
-            this.dbsStructure.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.dbsStructure.Location = new System.Drawing.Point(3, 174);
-            this.dbsStructure.Name = "dbsStructure";
-            this.dbsStructure.Size = new System.Drawing.Size(364, 394);
-            this.dbsStructure.TabIndex = 12;
+            this.tabTests.Controls.Add(this.tabPage1);
+            this.tabTests.Controls.Add(this.tabPage2);
+            this.tabTests.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tabTests.Location = new System.Drawing.Point(0, 0);
+            this.tabTests.Name = "tabTests";
+            this.tabTests.SelectedIndex = 0;
+            this.tabTests.Size = new System.Drawing.Size(638, 568);
+            this.tabTests.TabIndex = 0;
+            // 
+            // tabPage1
+            // 
+            this.tabPage1.Controls.Add(this.dbtTests);
+            this.tabPage1.Location = new System.Drawing.Point(4, 25);
+            this.tabPage1.Name = "tabPage1";
+            this.tabPage1.Padding = new System.Windows.Forms.Padding(3);
+            this.tabPage1.Size = new System.Drawing.Size(630, 539);
+            this.tabPage1.TabIndex = 0;
+            this.tabPage1.Text = "Entities";
+            this.tabPage1.UseVisualStyleBackColor = true;
             // 
             // dbtTests
             // 
             this.dbtTests.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.dbtTests.Location = new System.Drawing.Point(0, 0);
+            this.dbtTests.Location = new System.Drawing.Point(3, 3);
             this.dbtTests.MinimumSize = new System.Drawing.Size(615, 420);
             this.dbtTests.Name = "dbtTests";
-            this.dbtTests.Size = new System.Drawing.Size(638, 568);
-            this.dbtTests.TabIndex = 0;
+            this.dbtTests.Size = new System.Drawing.Size(624, 533);
+            this.dbtTests.TabIndex = 1;
+            // 
+            // tabPage2
+            // 
+            this.tabPage2.Controls.Add(this.deTests);
+            this.tabPage2.Location = new System.Drawing.Point(4, 25);
+            this.tabPage2.Name = "tabPage2";
+            this.tabPage2.Padding = new System.Windows.Forms.Padding(3);
+            this.tabPage2.Size = new System.Drawing.Size(630, 539);
+            this.tabPage2.TabIndex = 1;
+            this.tabPage2.Text = "Dynamic Entities";
+            this.tabPage2.UseVisualStyleBackColor = true;
+            // 
+            // deTests
+            // 
+            this.deTests.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.deTests.Location = new System.Drawing.Point(3, 3);
+            this.deTests.Name = "deTests";
+            this.deTests.Size = new System.Drawing.Size(624, 533);
+            this.deTests.TabIndex = 0;
             // 
             // frmMainSqlCe
             // 
@@ -201,6 +250,9 @@
             this.splitMain.ResumeLayout(false);
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();
+            this.tabTests.ResumeLayout(false);
+            this.tabPage1.ResumeLayout(false);
+            this.tabPage2.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -219,7 +271,11 @@
         private System.Windows.Forms.Button btnOpenFile;
         private System.Windows.Forms.TextBox txtFileName;
         private Common.DatabaseStructure dbsStructure;
+        private System.Windows.Forms.TabControl tabTests;
+        private System.Windows.Forms.TabPage tabPage1;
         private Common.DatabaseTests dbtTests;
+        private System.Windows.Forms.TabPage tabPage2;
+        private Common.DynamicEntityTests deTests;
 
     }
 }

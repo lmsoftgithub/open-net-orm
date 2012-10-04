@@ -167,8 +167,12 @@ namespace OpenNETCF.ORM.MainDemo.Common
                         Application.DoEvents();
                         if (list.Count > 0)
                         {
+                            int iCount = 0;
                             foreach (var item in list)
+                            {
                                 bindList.Add(item);
+                                if (iCount++ >= 10000 & chkLimitResults.Checked) break;
+                            }
                         }
                         //var conn = new System.Data.SqlServerCe.SqlCeConnection(String.Format("Data Source={0};Persist Security Info=False;Max Database Size=500;", "demo.sdf"));
                         //var items = new List<object>();
@@ -240,8 +244,12 @@ namespace OpenNETCF.ORM.MainDemo.Common
                         this.dgvResultSet.DataSource = bindList;
                         if (list.Length > 0)
                         {
+                            int iCount = 0;
                             foreach (var item in list)
+                            {
                                 bindList.Add(item);
+                                if (iCount++ >= 10000 & chkLimitResults.Checked) break;
+                            }
                         }
                     }
                 }
@@ -325,8 +333,12 @@ namespace OpenNETCF.ORM.MainDemo.Common
                             this.dgvResultSet.DataSource = bindList;
                             if (list.Length > 0)
                             {
+                                int iCount = 0;
                                 foreach (var item in list)
+                                {
                                     bindList.Add(item);
+                                    if (iCount++ >= 10000 & chkLimitResults.Checked) break;
+                                }
                             }
                         }
                         else

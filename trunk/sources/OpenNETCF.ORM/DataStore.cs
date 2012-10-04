@@ -13,6 +13,7 @@ namespace OpenNETCF.ORM
         protected EntityInfoCollection<TEntityInfo> m_entities = new EntityInfoCollection<TEntityInfo>();
 
         public event EventHandler<EntityTypeAddedArgs> EntityTypeAdded;
+        public event EventHandler<EntityTypeChangedArgs> EntityTypeModified;
         public event EventHandler<EntitySelectArgs> BeforeSelect;
         public event EventHandler<EntitySelectArgs> AfterSelect;
         public event EventHandler<EntityInsertArgs> BeforeInsert;
@@ -32,7 +33,7 @@ namespace OpenNETCF.ORM
         public abstract bool TableExists(EntityInfo entityInfo);
         public abstract bool FieldExists(String entityName, String fieldName);
         public abstract bool FieldExists(EntityInfo entityInfo, FieldAttribute fieldInfo);
-
+        protected abstract void CreateTable(EntityInfo entity);
 
         public void Insert(object item)
         {
@@ -72,7 +73,13 @@ namespace OpenNETCF.ORM
         public abstract object[] Select(Type entityType, bool fillReferences, bool filterReferences);
         public abstract object[] Select(Type entityType, object primaryKey, bool fillReferences, bool filterReferences);
         public abstract object[] Select(Type objectType, IEnumerable<FilterCondition> filters, bool fillReferences);
-        public abstract object[] Select(Type objectType, IEnumerable<FilterCondition> filters, bool fillReferences, bool filterReferences); 
+        public abstract object[] Select(Type objectType, IEnumerable<FilterCondition> filters, bool fillReferences, bool filterReferences);
+        // Those are meant to be used with Dynamic Entities only, but will actually work with all object types.
+        public abstract object[] Select(String entityName);
+        public abstract object[] Select(String entityName, bool fillReferences);
+        public abstract object[] Select(String entityName, object primaryKey, bool fillReferences);
+        public abstract object[] Select(String entityName, IEnumerable<FilterCondition> filters, bool fillReferences);
+        public abstract object[] Select(String entityName, IEnumerable<FilterCondition> filters, bool fillReferences, bool filterReferences);
 
         public abstract void Update(object item);
         public abstract void Update(object item, bool cascadeUpdates, string fieldName);
@@ -102,6 +109,8 @@ namespace OpenNETCF.ORM
         public abstract int Delete(Type entityType, bool cascade);
         public abstract int Delete<T>(IEnumerable<FilterCondition> filters, bool cascade);
         public abstract int Delete(Type entityType, IEnumerable<FilterCondition> filters, bool cascade);
+        public abstract int Delete(String entityName, bool cascade);
+        public abstract int Delete(String entityName, IEnumerable<FilterCondition> filters, bool cascade);
 
         public abstract bool Contains(object item);
 
@@ -112,9 +121,12 @@ namespace OpenNETCF.ORM
 
         public DataStore()
         {
+            DynamicEntityInfo.EntityDefinitionChanged += new EventHandler<EntityTypeChangedArgs>(DynamicEntityInfo_EntityDefinitionChanged);
         }
 
         public virtual string Name { get { return "Unnamed DataStore"; } }
+
+        public abstract bool HasConnection { get; }
 
         /// <summary>
         /// List of reserved words including a cross-reference of SQL, SQLite, Firebird, Oracle, MySQL.
@@ -297,6 +309,10 @@ namespace OpenNETCF.ORM
             {
                 throw new OpenNETCF.ORM.EntityDefinitionException(map.EntityName, string.Format("Entity '{0}' Contains no Field definitions.", map.EntityName));
             }
+            if (map.References != null && map.References.Count > 0 && map.Fields.KeyFields.Count != 1)
+            {
+                throw new OpenNETCF.ORM.EntityDefinitionException(map.EntityName, string.Format("Entity '{0}' Contains references but does have an invalid Primary Key count ({1}).", map.EntityName, map.Fields.KeyFields.Count));
+            }
             var methodInfo = entityType.GetMethod("ORM_CreateProxy", BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance);
             if (methodInfo != null)
             {
@@ -313,6 +329,7 @@ namespace OpenNETCF.ORM
             else // If a createProxy exists, we'll never need the constructor, but, in order to ensure compatibility with future versions/changes... it's best to require it.
                 throw new EntityDefinitionException(entityType.ToString(), "The Type doesn't have a parameterless default constructor");
             m_entities.Add(map);
+            OnTypeAdded(map);
         }
 
         public void DiscoverTypes(Assembly containingAssembly)
@@ -328,9 +345,54 @@ namespace OpenNETCF.ORM
             }
         }
 
+        public virtual void RegisterEntity(EntityInfo entity)
+        {
+            if (m_entities.HasEntity(entity.EntityName)) throw new EntityDefinitionException(entity.EntityName, "The entity already exists in the DataStore");
+            if (!(entity is TEntityInfo)) throw new InvalidCastException(string.Format("The entity '{0}' has does not match the EntityInfo type ({1})", entity.EntityName, typeof(TEntityInfo).ToString()));
+            m_entities.Add((TEntityInfo)entity);
+            if (StoreExists) CreateTable(entity);
+            if (entity is DynamicEntityInfo)
+            {
+                ((DynamicEntityInfo)entity).Registered = true;
+            }
+            OnTypeAdded(entity);
+        }
+
+        protected virtual void DynamicEntityInfo_EntityDefinitionChanged(object sender, EntityTypeChangedArgs e)
+        {
+            if (e.EntityInfo != null && e.FieldAttribute != null)
+            {
+                if (!FieldExists(e.EntityInfo, e.FieldAttribute))
+                {
+                    if (!e.TableCreated && StoreExists)
+                    {
+                        CreateTable(e.EntityInfo);
+                        e.TableCreated = true;
+                    }
+                    OnTypeModified(e.EntityInfo, e.FieldAttribute, e.TableCreated);
+                }
+            }
+        }
+
         protected void AddFieldToEntity(EntityInfo entity, FieldAttribute field)
         {
-            entity.Fields.Add(field);
+            if (entity != null && field != null && !entity.Fields.HasField(field.FieldName))
+            {
+                if (StoreExists && TableExists(entity))
+                {
+                    if (!FieldExists(entity, field))
+                    {
+                        entity.Fields.Add(field);
+                        CreateTable(entity);
+                        OnTypeModified(entity, field, true);
+                    }
+                }
+                else
+                {
+                    entity.Fields.Add(field);
+                    OnTypeModified(entity, field, false);
+                }
+            }
         }
 
         protected virtual String ProtectFieldName(String objectName)
@@ -343,12 +405,19 @@ namespace OpenNETCF.ORM
             return objectName;
         }
 
-
         public virtual void OnTypeAdded(EntityInfo entity)
         {
             if (EntityTypeAdded != null)
             {
                 EntityTypeAdded(this, new EntityTypeAddedArgs(entity));
+            }
+        }
+
+        public virtual void OnTypeModified(EntityInfo entity, FieldAttribute attribute, bool tableCreated)
+        {
+            if (EntityTypeModified != null)
+            {
+                EntityTypeModified(this, new EntityTypeChangedArgs(entity, attribute) { TableCreated = tableCreated });
             }
         }
 
@@ -392,11 +461,11 @@ namespace OpenNETCF.ORM
             }
         }
 
-        public virtual void OnBeforeDelete(Type entityType, IEnumerable<FilterCondition> filters)
+        public virtual void OnBeforeDelete(EntityInfo entity, IEnumerable<FilterCondition> filters)
         {
             if (BeforeDelete != null)
             {
-                BeforeDelete(this, new EntityDeleteArgs(entityType, filters));
+                BeforeDelete(this, new EntityDeleteArgs(entity, filters));
             }
         }
 
@@ -408,11 +477,11 @@ namespace OpenNETCF.ORM
             }
         }
 
-        public virtual void OnAfterDelete(Type entityType, IEnumerable<FilterCondition> filters, TimeSpan executionTime, string sqlQuery)
+        public virtual void OnAfterDelete(EntityInfo entity, IEnumerable<FilterCondition> filters, TimeSpan executionTime, string sqlQuery)
         {
             if (AfterDelete != null)
             {
-                AfterDelete(this, new EntityDeleteArgs(entityType, filters) { Timespan = executionTime, Data = sqlQuery });
+                AfterDelete(this, new EntityDeleteArgs(entity, filters) { Timespan = executionTime, Data = sqlQuery });
             }
         }
 

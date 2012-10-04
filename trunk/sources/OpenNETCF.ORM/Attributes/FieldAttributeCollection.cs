@@ -44,6 +44,17 @@ namespace OpenNETCF.ORM
             m_fields.Add(attribute.FieldName.ToLower(), attribute);
         }
 
+        internal void AddRange(IEnumerable<FieldAttribute> fields)
+        {
+            lock (m_fields)
+            {
+                foreach (var f in fields)
+                {
+                    Add(f);
+                }
+            }
+        }
+
         public int Count
         {
             get { return m_fields.Count; }

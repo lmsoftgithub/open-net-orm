@@ -20,19 +20,16 @@ namespace OpenNETCF.ORM
         {
             if (items != null)
             {
-                if (items.GetType().IsArray)
-                {
-                    foreach (var item in items as Array)
-                    {
-                        Insert(item, insertReferences, connection, transaction, false);
-                    }
-                }
-                else if (items is System.Collections.IEnumerable)
+                if (items is System.Collections.IEnumerable)
                 {
                     foreach (var item in items as System.Collections.IEnumerable)
                     {
                         Insert(item, insertReferences, connection, transaction, false);
                     }
+                }
+                else
+                {
+                    throw new NotSupportedException(String.Format("The given item collection type is not supported: {0}", items.GetType()));
                 }
             }
         }
@@ -41,19 +38,16 @@ namespace OpenNETCF.ORM
         {
             if (items != null)
             {
-                if (items.GetType().IsArray)
-                {
-                    foreach (var item in items as Array)
-                    {
-                        InsertOrUpdate(item, insertReferences, connection, transaction);
-                    }
-                }
-                else if (items is System.Collections.IEnumerable)
+                if (items is System.Collections.IEnumerable)
                 {
                     foreach (var item in items as System.Collections.IEnumerable)
                     {
                         InsertOrUpdate(item, insertReferences, connection, transaction);
                     }
+                }
+                else
+                {
+                    throw new NotSupportedException(String.Format("The given item collection type is not supported: {0}", items.GetType()));
                 }
             }
         }
@@ -176,18 +170,24 @@ namespace OpenNETCF.ORM
 
                         string et = null;
 
-                        // we've already enforced this to be an array when creating the store
-                        foreach (var element in valueArray as Array)
+                        if (reference.IsArray || reference.IsList)
                         {
-                            if (et == null)
+                            foreach (var element in valueArray as System.Collections.IEnumerable)
                             {
-                                et = m_entities.GetNameForType(element.GetType());
+                                if (et == null)
+                                {
+                                    et = m_entities.GetNameForType(element.GetType());
+                                }
+                                Entities[et].Fields[reference.ReferenceField].PropertyInfo.SetValue(element, fk, null);
+                                if (checkUpdates)
+                                    this.InsertOrUpdate(element, insertReferences, connection, transaction);
+                                else
+                                    this.Insert(element, insertReferences, connection, transaction, false);
                             }
-                            Entities[et].Fields[reference.ReferenceField].PropertyInfo.SetValue(element, fk, null);
-                            if (checkUpdates)
-                                this.InsertOrUpdate(element, insertReferences, connection, transaction);
-                            else
-                                this.Insert(element, insertReferences, connection, transaction, false);
+                        }
+                        else
+                        {
+                            throw new NotImplementedException();
                         }
                     }
                 }

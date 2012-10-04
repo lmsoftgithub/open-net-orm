@@ -17,6 +17,19 @@ namespace OpenNETCF.ORM
         public EntityInfo EntityInfo { get; set; }
     }
 
+    public class EntityTypeChangedArgs : EventArgs
+    {
+        internal EntityTypeChangedArgs(EntityInfo info, FieldAttribute field)
+        {
+            EntityInfo = info;
+            FieldAttribute = field;
+            TableCreated = false;
+        }
+        public EntityInfo EntityInfo { get; internal set; }
+        public FieldAttribute FieldAttribute { get; internal set; }
+        public bool TableCreated { get; internal set; }
+    }
+
     public class EntitySelectArgs : EventArgs
     {
         internal EntitySelectArgs(EntityInfo info, IEnumerable<FilterCondition> filters, bool fillReferences)
@@ -75,24 +88,24 @@ namespace OpenNETCF.ORM
         {
             Item = item;
             Filters = null;
-            EntityType = null;
+            EntityInfo = null;
             if (Item != null) Item.GetType();
             Data = null;
             Timespan = new TimeSpan(0);
         }
 
-        internal EntityDeleteArgs(Type entityType, IEnumerable<FilterCondition> filters)
+        internal EntityDeleteArgs(EntityInfo entity, IEnumerable<FilterCondition> filters)
         {
             Item = null;
             Filters = filters;
-            EntityType = entityType;
+            EntityInfo = entity;
             Data = null;
             Timespan = new TimeSpan(0);
         }
 
         public object Item { get; set; }
         public IEnumerable<FilterCondition> Filters { get; set; }
-        public Type EntityType { get; set; }
+        public EntityInfo EntityInfo { get; set; }
         public object Data { get; set; }
         public TimeSpan Timespan { get; set; }
     }

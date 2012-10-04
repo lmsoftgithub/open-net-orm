@@ -103,14 +103,9 @@ namespace OpenNETCF.ORM
             }
         }
         
-        protected override object[] Select(Type objectType, IEnumerable<FilterCondition> filters, int fetchCount, int firstRowOffset, bool fillReferences, bool filterReferences, IDbConnection connection)
+        protected override object[] Select(string entityName, IEnumerable<FilterCondition> filters, int fetchCount, int firstRowOffset, bool fillReferences, bool filterReferences, IDbConnection connection)
         {
-            string entityName = m_entities.GetNameForType(objectType);
-
-            if (entityName == null)
-            {
-                throw new EntityNotFoundException(objectType);
-            }
+            if (!m_entities.HasEntity(entityName)) throw new EntityNotFoundException(entityName);
 
             UpdateIndexCacheForType(entityName);
 
@@ -119,6 +114,9 @@ namespace OpenNETCF.ORM
 
             var items = new List<object>();
             bool tableDirect;
+
+            SqlEntityInfo entity = m_entities[entityName];
+            var isDynamicEntity = entity is DynamicEntityInfo;
 
             if (connection == null) 
                 connection = GetConnection(false);
@@ -131,7 +129,6 @@ namespace OpenNETCF.ORM
 
             try
             {
-                SqlEntityInfo entity = m_entities[entityName];
 
                 CheckPrimaryKeyIndex(entityName);
 
@@ -252,7 +249,7 @@ namespace OpenNETCF.ORM
                             if (entity.CreateProxy == null)
                             {
                                 if (entity.DefaultConstructor == null)
-                                    item = Activator.CreateInstance(objectType);
+                                    item = Activator.CreateInstance(entity.EntityType);
                                 else
                                     item = entity.DefaultConstructor.Invoke(null);
 

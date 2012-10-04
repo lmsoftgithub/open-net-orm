@@ -18,7 +18,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
+    <OutputPath>bin\x86\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -83,6 +83,12 @@
     <Compile Include="Common\DatabaseTests.Designer.cs">
       <DependentUpon>DatabaseTests.cs</DependentUpon>
     </Compile>
+    <Compile Include="Common\DynamicEntityTests.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Common\DynamicEntityTests.Designer.cs">
+      <DependentUpon>DynamicEntityTests.cs</DependentUpon>
+    </Compile>
     <Compile Include="FireBird\frmMainFirebird.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -125,8 +131,14 @@
     <EmbeddedResource Include="Common\DatabaseTests.resx">
       <DependentUpon>DatabaseTests.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Common\DynamicEntityTests.resx">
+      <DependentUpon>DynamicEntityTests.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="frmMain.resx">
       <DependentUpon>frmMain.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="MSSQL\frmMainMSSQL.resx">
+      <DependentUpon>frmMainMSSQL.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
