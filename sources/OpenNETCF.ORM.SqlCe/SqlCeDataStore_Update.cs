@@ -12,19 +12,29 @@ namespace OpenNETCF.ORM
     {
         protected override void Update(object item, bool cascadeUpdates, string fieldName, IDbConnection connection, IDbTransaction transaction)
         {
-            object keyValue;
-            var itemType = item.GetType();
-            string entityName = m_entities.GetNameForType(itemType);
+            var isDynamicEntity = item is DynamicEntity;
+            string entityName = null;
+            if (isDynamicEntity)
+            {
+                entityName = ((DynamicEntity)item).EntityName;
+                if (!m_entities.HasEntity(entityName)) throw new EntityNotFoundException(entityName);
+            }
+            else
+            {
+                entityName = m_entities.GetNameForType(item.GetType());
+            }
 
             if (entityName == null)
             {
-                throw new EntityNotFoundException(itemType);
+                throw new EntityNotFoundException(item.GetType());
             }
+            var entity = m_entities[entityName];
 
-            if (Entities[entityName].Fields.KeyField == null)
+            if (entity.Fields.KeyField == null)
             {
                 throw new PrimaryKeyRequiredException("A primary key is required on an Entity in order to perform Updates");
             }
+            object keyValue;
 
             Boolean bInheritedConnection = connection != null;
             if (transaction == null && connection == null)
@@ -39,19 +49,36 @@ namespace OpenNETCF.ORM
                 using (var command = new SqlCeCommand())
                 {
                     if (transaction == null)
+                    {
                         command.Connection = connection as SqlCeConnection;
+                    }
                     else
+                    {
                         command.Transaction = transaction as SqlCeTransaction;
+                        command.Connection = transaction.Connection as SqlCeConnection;
+                    }
                     // TODO: Update doesn't support multiple Primary Keys. Need to be checked before we use TableDirect.
                     command.CommandText = entityName;
                     command.CommandType = CommandType.TableDirect;
-                    command.IndexName = Entities[entityName].PrimaryKeyIndexName;
+                    command.IndexName = entity.PrimaryKeyIndexName;
                     using (var results = command.ExecuteResultSet(ResultSetOptions.Scrollable | ResultSetOptions.Updatable))
                     {
-                        keyValue = Entities[entityName].Fields.KeyField.PropertyInfo.GetValue(item, null);
+                        var indexes = new List<object>();
+                        foreach (var field in entity.Fields.KeyFields)
+                        {
+                            if (isDynamicEntity)
+                            {
+                                keyValue = ((DynamicEntity)item)[field.FieldName];
+                            }
+                            else
+                            {
+                                keyValue = field.PropertyInfo.GetValue(item, null);
+                            }
+                            indexes.Add(keyValue);
+                        }
                         var ordinals = GetOrdinals(entityName, results);
                         // seek on the PK
-                        var found = results.Seek(DbSeekOptions.BeforeEqual, new object[] { keyValue });
+                        var found = results.Seek(DbSeekOptions.BeforeEqual, indexes.ToArray());
 
                         if (!found)
                         {
@@ -62,7 +89,7 @@ namespace OpenNETCF.ORM
                         results.Read();
 
                         // update the values
-                        foreach (var field in Entities[entityName].Fields)
+                        foreach (var field in entity.Fields)
                         {
                             // do not update PK fields
                             if (field.IsPrimaryKey)
@@ -73,44 +100,70 @@ namespace OpenNETCF.ORM
                             {
                                 continue; // if we pass in a field name, skip over any fields that don't match
                             }
-                            else if (field.DataType == DbType.Object)
+                            else if (isDynamicEntity)
                             {
-                                // get serializer
-                                var serializer = GetSerializer(itemType);
-
-                                if (serializer == null)
+                                object value = null;
+                                if (entity.Fields[field.FieldName].DataType == DbType.Object)
                                 {
-                                    throw new MissingMethodException(
-                                        string.Format("The field '{0}' requires a custom serializer/deserializer method pair in the '{1}' Entity",
-                                        field.FieldName, entityName));
+                                    if (entity.Serializer == null)
+                                    {
+                                        throw new MissingMethodException(
+                                            string.Format("The field '{0}' requires a custom serializer/deserializer method pair in the '{1}' Entity",
+                                            field.FieldName, entity.EntityName));
+                                    }
+                                    value = entity.Serializer.Invoke(item, field.FieldName);
                                 }
-                                var value = serializer.Invoke(item, new object[] { field.FieldName });
-                                results.SetValue(ordinals[field.FieldName], value);
-                            }
-                            else if (field.IsRowVersion)
-                            {
-                                // read-only, so do nothing
-                            }
-                            else if (field.PropertyInfo.PropertyType.UnderlyingTypeIs<TimeSpan>())
-                            {
-                                // SQL Compact doesn't support Time, so we're convert to ticks in both directions
-                                var value = field.PropertyInfo.GetValue(item, null);
+                                else
+                                {
+                                    value = ((DynamicEntity)item)[field.FieldName];
+                                }
                                 if (value == null)
                                 {
                                     results.SetValue(ordinals[field.FieldName], DBNull.Value);
                                 }
                                 else
                                 {
-                                    var ticks = ((TimeSpan)value).Ticks;
-                                    results.SetValue(ordinals[field.FieldName], ticks);
+                                    results.SetValue(ordinals[field.FieldName], value);
                                 }
                             }
                             else
                             {
-                                var value = field.PropertyInfo.GetValue(item, null);
+                                if (field.DataType == DbType.Object)
+                                {
+                                    if (entity.Serializer == null)
+                                    {
+                                        throw new MissingMethodException(
+                                            string.Format("The field '{0}' requires a custom serializer/deserializer method pair in the '{1}' Entity",
+                                            field.FieldName, entityName));
+                                    }
+                                    var value = entity.Serializer.Invoke(item, field.FieldName);
+                                    results.SetValue(ordinals[field.FieldName], value);
+                                }
+                                else if (field.IsRowVersion)
+                                {
+                                    // read-only, so do nothing
+                                }
+                                else if (field.PropertyInfo.PropertyType.UnderlyingTypeIs<TimeSpan>())
+                                {
+                                    // SQL Compact doesn't support Time, so we're convert to ticks in both directions
+                                    var value = field.PropertyInfo.GetValue(item, null);
+                                    if (value == null)
+                                    {
+                                        results.SetValue(ordinals[field.FieldName], DBNull.Value);
+                                    }
+                                    else
+                                    {
+                                        var ticks = ((TimeSpan)value).Ticks;
+                                        results.SetValue(ordinals[field.FieldName], ticks);
+                                    }
+                                }
+                                else
+                                {
+                                    var value = field.PropertyInfo.GetValue(item, null);
 
-                                // TODO: should we update only if it's changed?  Does it really matter at this point?
-                                results.SetValue(ordinals[field.FieldName], value);
+                                    // TODO: should we update only if it's changed?  Does it really matter at this point?
+                                    results.SetValue(ordinals[field.FieldName], value);
+                                }
                             }
                         }
                         results.Update();
@@ -118,7 +171,7 @@ namespace OpenNETCF.ORM
                 }
                 if (cascadeUpdates)
                 {
-                    CascadeUpdates(item, fieldName, keyValue, m_entities[entityName], connection, transaction);
+                    CascadeUpdates(item, fieldName, null, entity, connection, transaction);
                 }
                 OnAfterUpdate(item, cascadeUpdates, fieldName, DateTime.Now.Subtract(start), "tableDirect");
             }

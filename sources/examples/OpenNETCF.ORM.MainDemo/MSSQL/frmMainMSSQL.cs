@@ -24,14 +24,16 @@ namespace OpenNETCF.ORM.MainDemo.MSSQL
         {
             try
             {
-                this.txtConnectionString.Text = "Data Source=192.168.56.52;Initial Catalog=POD; User Id=sa; Password=manager;Timeout=30";
+                this.txtConnectionString.Text = "Data Source=192.168.56.50;Initial Catalog=demo; User Id=sa; Password=manager;Timeout=30";
                 this._DataStore = new MSSqlDataStore(this.txtConnectionString.Text);
                 if (this._DataStore.HasConnection)
                 {
                     this._DataStore.DiscoverTypes(System.Reflection.Assembly.GetAssembly(typeof(OpenNETCF.ORM.Model.basictable)));
                     this.dbsStructure.DataStore = this._DataStore;
                     this.dbtTests.DataStore = this._DataStore;
+                    this.deTests.DataStore = this._DataStore;
                     this.dbsStructure.DataStoreChanged += new EventHandler(dbsStructure_DataStoreChanged);
+                    this.deTests.DataStoreChanged += new EventHandler(deTests_DataStoreChanged);
                 }
                 else
                 {
@@ -46,9 +48,16 @@ namespace OpenNETCF.ORM.MainDemo.MSSQL
             }
         }
 
+        void deTests_DataStoreChanged(object sender, EventArgs e)
+        {
+            this.dbtTests.RefreshUI();
+            this.dbsStructure.RefreshUI();
+        }
+
         void dbsStructure_DataStoreChanged(object sender, EventArgs e)
         {
             this.dbtTests.RefreshUI();
+            this.deTests.RefreshUI();
         }
 
         private void btnCreateDataStore_Click(object sender, EventArgs e)

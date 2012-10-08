@@ -9,12 +9,12 @@ namespace OpenNETCF.ORM
 {
     partial class SqlCeDataStore
     {
-        public override object[] Fetch(Type entityType, int fetchCount, int firstRowOffset, string sortField, FieldSearchOrder sortOrder, FilterCondition filter, bool fillReferences, bool filterReferences)
+        public override object[] Fetch(Type entityType, int fetchCount, int firstRowOffset, string sortField, FieldOrder sortOrder, FilterCondition filter, bool fillReferences, bool filterReferences)
         {
             throw new NotImplementedException();
         }
 
-        public override T[] Fetch<T>(int fetchCount, int firstRowOffset, string sortField, FieldSearchOrder sortOrder, FilterCondition filter, bool fillReferences, bool filterReferences)
+        public override T[] Fetch<T>(int fetchCount, int firstRowOffset, string sortField, FieldOrder sortOrder, FilterCondition filter, bool fillReferences, bool filterReferences)
         {
             var type = typeof(T);
             string entityName = m_entities.GetNameForType(type);
@@ -31,7 +31,7 @@ namespace OpenNETCF.ORM
                         string.Format("Sort Field '{0}' not found in Entity '{1}'", sortField, entityName));
                 }
 
-                if (sortOrder == FieldSearchOrder.NotSearchable)
+                if (sortOrder == FieldOrder.None)
                 {
                     throw new System.ArgumentException("You must select a valid sort order if providing a sort field.");
                 }
@@ -144,9 +144,7 @@ namespace OpenNETCF.ORM
                     {
                         if (fillReferences)
                         {
-                            // get serializer
-                            var itemType = item.GetType();
-                            var deserializer = GetDeserializer(itemType);
+                            var deserializer = Entities[entityName].Deserializer;
 
                             if (deserializer == null)
                             {
@@ -155,7 +153,7 @@ namespace OpenNETCF.ORM
                                     field.FieldName, entityName));
                             }
 
-                            var @object = deserializer.Invoke(item, new object[] { field.FieldName, value });
+                            var @object = deserializer.Invoke(item, field.FieldName, value);
                             field.PropertyInfo.SetValue(item, @object, null);
                         }
                     }

@@ -90,19 +90,25 @@ namespace OpenNETCF.ORM
 
         void Drop<T>(bool cascade);
         void Drop(Type entityType, bool cascade);
+        void Drop(String entityName, bool cascade);
         void DropAndCreateTable<T>(bool cascade);
         void DropAndCreateTable(Type entityType, bool cascade);
+        void DropAndCreateTable(String entityName, bool cascade);
 
         T[] Fetch<T>(int fetchCount) where T : new();
         T[] Fetch<T>(int fetchCount, int firstRowOffset) where T : new();
         T[] Fetch<T>(int fetchCount, int firstRowOffset, string sortField) where T : new();
-        T[] Fetch<T>(int fetchCount, int firstRowOffset, string sortField, FieldSearchOrder sortOrder, FilterCondition filter, bool fillReferences, bool filterReferences) where T : new();
+        T[] Fetch<T>(int fetchCount, int firstRowOffset, string sortField, FieldOrder sortOrder, FilterCondition filter, bool fillReferences, bool filterReferences) where T : new();
         object[] Fetch(Type entityType, int fetchCount, int firstRowOffset, bool fillReferences);
         object[] Fetch(Type entityType, int fetchCount, int firstRowOffset, bool fillReferences, bool filterReferences);
-        object[] Fetch(Type entityType, int fetchCount, int firstRowOffset, string sortField, FieldSearchOrder sortOrder, FilterCondition filter, bool fillReferences, bool filterReferences);
+        object[] Fetch(Type entityType, int fetchCount, int firstRowOffset, string sortField, FieldOrder sortOrder, FilterCondition filter, bool fillReferences, bool filterReferences);
 
         int Count<T>();
+        int Count<T>(IEnumerable<FilterCondition> filters);
         int Count(Type entityType);
+        int Count(Type entityType, IEnumerable<FilterCondition> filters);
+        int Count(String entityName);
+        int Count(String entityName, IEnumerable<FilterCondition> filters);
 
         bool Contains(object item);
 
@@ -112,5 +118,6 @@ namespace OpenNETCF.ORM
         bool TableExists(EntityInfo entityInfo);
         bool FieldExists(String entityName, String fieldName);
         bool FieldExists(EntityInfo entityInfo, FieldAttribute fieldInfo);
+        List<DynamicEntityInfo> ReverseEngineer();
     }
 }

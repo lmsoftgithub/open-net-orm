@@ -31,20 +31,31 @@ namespace OpenNETCF.ORM
 
         protected override void Update(object item, bool cascadeUpdates, string fieldName, IDbConnection connection, IDbTransaction transaction)
         {
-            object keyValue;
-            var changeDetected = false;
-            var itemType = item.GetType();
-            string entityName = m_entities.GetNameForType(itemType);
+            var isDynamicEntity = item is DynamicEntity;
+            string entityName = null;
+            if (isDynamicEntity)
+            {
+                entityName = ((DynamicEntity)item).EntityName;
+                if (!m_entities.HasEntity(entityName)) throw new EntityNotFoundException(entityName);
+            }
+            else
+            {
+                entityName = m_entities.GetNameForType(item.GetType());
+            }
 
             if (entityName == null)
             {
-                throw new EntityNotFoundException(itemType);
+                throw new EntityNotFoundException(item.GetType());
             }
+            var entity = m_entities[entityName];
 
-            if (Entities[entityName].Fields.KeyField == null)
+            if (entity.Fields.KeyField == null)
             {
                 throw new PrimaryKeyRequiredException("A primary key is required on an Entity in order to perform Updates");
             }
+
+            object keyValue;
+            var changeDetected = false;
 
             Boolean bInheritedConnection = connection != null;
             if (transaction == null && connection == null)
@@ -58,17 +69,40 @@ namespace OpenNETCF.ORM
 
                 using (var command = GetNewCommandObject())
                 {
-                    keyValue = Entities[entityName].Fields.KeyField.PropertyInfo.GetValue(item, null);
+                    keyValue = entity.Fields.KeyField.PropertyInfo.GetValue(item, null);
 
                     if (transaction == null)
                         command.Connection = connection;
                     else
                         command.Transaction = transaction;
+                    StringBuilder sql = new StringBuilder();
+                    StringBuilder where = new StringBuilder(" WHERE ");
 
-                    command.CommandText = string.Format("SELECT * FROM {0} WHERE [{1}] = @keyparam",
-                        entityName,
-                        Entities[entityName].Fields.KeyField.FieldName);
+                    sql.Append("SELECT ");
+                    int count = entity.Fields.Count;
+                    int keycount = entity.Fields.KeyFields.Count;
+                    foreach (FieldAttribute field in entity.Fields)
+                    {
+                        sql.Append(field.FieldName);
+                        if (entity.Fields.KeyFields.Contains(field))
+                        {
+                            where.AppendFormat(" [{0}] = @{0} ", field.FieldName);
+                            if (isDynamicEntity)
+                            {
+                                keyValue = ((DynamicEntity)item)[field.FieldName];
+                            }
+                            else
+                            {
+                                keyValue = field.PropertyInfo.GetValue(item, null);
+                            }
+                            command.Parameters.Add(new SQLiteParameter(String.Format("@{0}", field.FieldName), keyValue));
+                            if (--keycount > 0) where.Append(" AND ");
+                        }
+                        if (--count > 0) sql.Append(", ");
+                    }
+                    sql.AppendFormat(" FROM {0} {1}", entityName, where.ToString());
 
+                    command.CommandText = sql.ToString();
                     command.CommandType = CommandType.Text;
                     command.Parameters.Add(new SQLiteParameter("@keyparam", keyValue));
 
@@ -88,7 +122,7 @@ namespace OpenNETCF.ORM
                         using (var insertCommand = GetNewCommandObject())
                         {
                             // update the values
-                            foreach (var field in Entities[entityName].Fields)
+                            foreach (var field in entity.Fields)
                             {
                                 // do not update PK fields
                                 if (field.IsPrimaryKey)
@@ -99,24 +133,23 @@ namespace OpenNETCF.ORM
                                 {
                                     continue; // if we pass in a field name, skip over any fields that don't match
                                 }
-                                else if (field.IsRowVersion)
+                                else if (isDynamicEntity)
                                 {
-                                    // read-only, so do nothing
-                                }
-                                else if (field.DataType == DbType.Object)
-                                {
-                                    changeDetected = true;
-                                    // get serializer
-                                    var serializer = GetSerializer(itemType);
-
-                                    if (serializer == null)
+                                    object value = null;
+                                    if (entity.Fields[field.FieldName].DataType == DbType.Object)
                                     {
-                                        throw new MissingMethodException(
-                                            string.Format("The field '{0}' requires a custom serializer/deserializer method pair in the '{1}' Entity",
-                                            field.FieldName, entityName));
+                                        if (entity.Serializer == null)
+                                        {
+                                            throw new MissingMethodException(
+                                                string.Format("The field '{0}' requires a custom serializer/deserializer method pair in the '{1}' Entity",
+                                                field.FieldName, entity.EntityName));
+                                        }
+                                        value = entity.Serializer.Invoke(item, field.FieldName);
                                     }
-                                    var value = serializer.Invoke(item, new object[] { field.FieldName });
-
+                                    else
+                                    {
+                                        value = ((DynamicEntity)item)[field.FieldName];
+                                    }
                                     if (value == null)
                                     {
                                         updateSQL.AppendFormat("{0}=NULL, ", field.FieldName);
@@ -127,29 +160,22 @@ namespace OpenNETCF.ORM
                                         insertCommand.Parameters.Add(new SQLiteParameter("@" + field.FieldName, value));
                                     }
                                 }
-                                else if (field.PropertyInfo.PropertyType.UnderlyingTypeIs<TimeSpan>())
-                                {
-                                    changeDetected = true;
-                                    // SQL Compact doesn't support Time, so we're convert to ticks in both directions
-                                    var value = field.PropertyInfo.GetValue(item, null);
-                                    if (value == null)
-                                    {
-                                        updateSQL.AppendFormat("{0}=NULL, ", field.FieldName);
-                                    }
-                                    else
-                                    {
-                                        var ticks = ((TimeSpan)value).Ticks;
-                                        updateSQL.AppendFormat("{0}=@{0}, ", field.FieldName);
-                                        insertCommand.Parameters.Add(new SQLiteParameter("@" + field.FieldName, ticks));
-                                    }
-                                }
                                 else
                                 {
-                                    var value = field.PropertyInfo.GetValue(item, null);
-
-                                    if (reader[field.FieldName] != value)
+                                    if (field.IsRowVersion)
+                                    {
+                                        // read-only, so do nothing
+                                    }
+                                    else if (field.DataType == DbType.Object)
                                     {
                                         changeDetected = true;
+                                        if (entity.Serializer == null)
+                                        {
+                                            throw new MissingMethodException(
+                                                string.Format("The field '{0}' requires a custom serializer/deserializer method pair in the '{1}' Entity",
+                                                field.FieldName, entityName));
+                                        }
+                                        var value = entity.Serializer.Invoke(item, field.FieldName);
 
                                         if (value == null)
                                         {
@@ -161,6 +187,41 @@ namespace OpenNETCF.ORM
                                             insertCommand.Parameters.Add(new SQLiteParameter("@" + field.FieldName, value));
                                         }
                                     }
+                                    else if (field.PropertyInfo.PropertyType.UnderlyingTypeIs<TimeSpan>())
+                                    {
+                                        changeDetected = true;
+                                        // SQL Compact doesn't support Time, so we're convert to ticks in both directions
+                                        var value = field.PropertyInfo.GetValue(item, null);
+                                        if (value == null)
+                                        {
+                                            updateSQL.AppendFormat("{0}=NULL, ", field.FieldName);
+                                        }
+                                        else
+                                        {
+                                            var ticks = ((TimeSpan)value).Ticks;
+                                            updateSQL.AppendFormat("{0}=@{0}, ", field.FieldName);
+                                            insertCommand.Parameters.Add(new SQLiteParameter("@" + field.FieldName, ticks));
+                                        }
+                                    }
+                                    else
+                                    {
+                                        var value = field.PropertyInfo.GetValue(item, null);
+
+                                        if (reader[field.FieldName] != value)
+                                        {
+                                            changeDetected = true;
+
+                                            if (value == null)
+                                            {
+                                                updateSQL.AppendFormat("{0}=NULL, ", field.FieldName);
+                                            }
+                                            else
+                                            {
+                                                updateSQL.AppendFormat("{0}=@{0}, ", field.FieldName);
+                                                insertCommand.Parameters.Add(new SQLiteParameter("@" + field.FieldName, value));
+                                            }
+                                        }
+                                    }
                                 }
                             }
 
@@ -169,10 +230,29 @@ namespace OpenNETCF.ORM
                             {
                                 // remove the trailing comma and append the filter
                                 updateSQL.Length -= 2;
-                                updateSQL.AppendFormat(" WHERE {0} = @keyparam", Entities[entityName].Fields.KeyField.FieldName);
-                                insertCommand.Parameters.Add(new SQLiteParameter("@keyparam", keyValue));
+                                updateSQL.Append(where.ToString());
+                                foreach (FieldAttribute field in entity.Fields.KeyFields)
+                                {
+                                    if (isDynamicEntity)
+                                    {
+                                        keyValue = ((DynamicEntity)item)[field.FieldName];
+                                    }
+                                    else
+                                    {
+                                        keyValue = field.PropertyInfo.GetValue(item, null);
+                                    }
+                                    insertCommand.Parameters.Add(new SQLiteParameter(String.Format("@{0}", field.FieldName), keyValue));
+                                }
                                 insertCommand.CommandText = updateSQL.ToString();
-                                insertCommand.Connection = connection;
+                                if (transaction == null)
+                                {
+                                    insertCommand.Connection = connection as SQLiteConnection;
+                                }
+                                else
+                                {
+                                    insertCommand.Connection = transaction.Connection as SQLiteConnection;
+                                    insertCommand.Transaction = transaction as SQLiteTransaction;
+                                }
                                 insertCommand.ExecuteNonQuery();
                             }
                         }
@@ -180,7 +260,7 @@ namespace OpenNETCF.ORM
 
                     if (cascadeUpdates)
                     {
-                        CascadeUpdates(item, fieldName, keyValue, m_entities[entityName], connection, transaction);
+                        CascadeUpdates(item, fieldName, null, entity, connection, transaction);
                     }
 
                     if (changeDetected)

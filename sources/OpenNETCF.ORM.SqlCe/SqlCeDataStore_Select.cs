@@ -29,7 +29,7 @@ namespace OpenNETCF.ORM
 
                         if (!field.IsPrimaryKey)
                         {
-                            if (field.SearchOrder == FieldSearchOrder.NotSearchable)
+                            if (field.SearchOrder == FieldOrder.None)
                             {
                                 buildFilter = true;
                             }
@@ -40,7 +40,7 @@ namespace OpenNETCF.ORM
                             else
                             {
                                 indexName = string.Format("ORM_IDX_{0}_{1}_{2}", entityName, filter.FieldName,
-                                    field.SearchOrder == FieldSearchOrder.Descending ? "DESC" : "ASC");
+                                    field.SearchOrder == FieldOrder.Descending ? "DESC" : "ASC");
 
                                 // build the index if it's not there
                                 field.IndexName = VerifyIndex(entityName, filter.FieldName, field.SearchOrder, null);
@@ -246,7 +246,29 @@ namespace OpenNETCF.ORM
                             object item = null;
                             object rowPK = null;
 
-                            if (entity.CreateProxy == null)
+                            if (isDynamicEntity)
+                            {
+                                var dynamic = new DynamicEntity(entity as DynamicEntityInfo);
+                                foreach (var pair in ordinals)
+                                {
+                                    if (entity.Fields[pair.Key].DataType == DbType.Object)
+                                    {
+                                        if (entity.Deserializer == null)
+                                        {
+                                            throw new MissingMethodException(
+                                                string.Format("The field '{0}' requires a custom serializer/deserializer method pair in the '{1}' Entity",
+                                                pair.Key, entityName));
+                                        }
+                                        dynamic[pair.Key] = entity.Deserializer(dynamic, pair.Key, results[pair.Value]);
+                                    }
+                                    else
+                                    {
+                                        dynamic[pair.Key] = results[pair.Value];
+                                    }
+                                }
+                                item = dynamic;
+                            }
+                            else if (entity.CreateProxy == null)
                             {
                                 if (entity.DefaultConstructor == null)
                                     item = Activator.CreateInstance(entity.EntityType);
@@ -260,22 +282,15 @@ namespace OpenNETCF.ORM
                                     {
                                         if (field.DataType == DbType.Object)
                                         {
-                                            if (fillReferences)
+                                            if (entity.Deserializer == null)
                                             {
-                                                // get serializer
-                                                var itemType = item.GetType();
-                                                var deserializer = GetDeserializer(itemType);
-
-                                                if (deserializer == null)
-                                                {
-                                                    throw new MissingMethodException(
-                                                        string.Format("The field '{0}' requires a custom serializer/deserializer method pair in the '{1}' Entity",
-                                                        field.FieldName, entityName));
-                                                }
-
-                                                var @object = deserializer.Invoke(item, new object[] { field.FieldName, value });
-                                                field.PropertyInfo.SetValue(item, @object, null);
+                                                throw new MissingMethodException(
+                                                    string.Format("The field '{0}' requires a custom serializer/deserializer method pair in the '{1}' Entity",
+                                                    field.FieldName, entityName));
                                             }
+
+                                            var @object = entity.Deserializer.Invoke(item, field.FieldName, value);
+                                            field.PropertyInfo.SetValue(item, @object, null);
                                         }
                                         else if (field.IsRowVersion)
                                         {

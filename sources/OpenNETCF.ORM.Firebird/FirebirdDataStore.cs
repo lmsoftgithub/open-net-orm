@@ -264,31 +264,6 @@ namespace OpenNETCF.ORM
             (Entities[entityName] as FbEntityInfo).PrimaryKeyIndexName = name;
         }
 
-        public override int Count<T>(IEnumerable<FilterCondition> filters)
-        {
-            var t = typeof(T);
-            string entityName = m_entities.GetNameForType(t);
-
-            if (entityName == null)
-            {
-                throw new EntityNotFoundException(t);
-            }
-
-            var connection = GetConnection(true);
-            try
-            {
-                using (var command = BuildFilterCommand<FbCommand, FbParameter>(entityName, filters, true, 0, 0))
-                {
-                    command.Connection = connection as FbConnection;
-                    return (int)command.ExecuteScalar();
-                }
-            }
-            finally
-            {
-                DoneWithConnection(connection, true);
-            }
-        }
-
         protected override IDataParameter CreateParameterObject(string parameterName, object parameterValue)
         {
             return new FbParameter(parameterName, parameterValue);
@@ -341,7 +316,7 @@ namespace OpenNETCF.ORM
                 bTableExists = true;
                 foreach (var field in entity.Fields)
                 {
-                    if (field.SearchOrder != FieldSearchOrder.NotSearchable)
+                    if (field.SearchOrder != FieldOrder.None)
                     {
                         field.IndexName = VerifyIndex(entity.EntityName, field.FieldName, field.SearchOrder, connection);
                     }
@@ -373,7 +348,7 @@ namespace OpenNETCF.ORM
                             int i = command.ExecuteNonQuery();
                         }
                         // create indexes
-                        if (field.SearchOrder != FieldSearchOrder.NotSearchable)
+                        if (field.SearchOrder != FieldOrder.None)
                         {
                             field.IndexName = VerifyIndex(entity.EntityName, field.FieldName, field.SearchOrder, connection);
                         }
@@ -381,7 +356,7 @@ namespace OpenNETCF.ORM
                     else
                     {
                         // create indexes
-                        if (field.SearchOrder != FieldSearchOrder.NotSearchable)
+                        if (field.SearchOrder != FieldOrder.None)
                         {
                             field.IndexName = VerifyIndex(entity.EntityName, field.FieldName, field.SearchOrder, connection);
                         }
@@ -825,7 +800,7 @@ namespace OpenNETCF.ORM
             }
         }
 
-        protected override string VerifyIndex(string entityName, string fieldName, FieldSearchOrder searchOrder, IDbConnection connection)
+        protected override string VerifyIndex(string entityName, string fieldName, FieldOrder searchOrder, IDbConnection connection)
         {
             bool localConnection = false;
             if (connection == null)
@@ -836,7 +811,7 @@ namespace OpenNETCF.ORM
             try
             {
                 var indexName = string.Format("ORM_IDX_{0}_{1}_{2}", entityName, fieldName,
-                    searchOrder == FieldSearchOrder.Descending ? "DESC" : "ASC");
+                    searchOrder == FieldOrder.Descending ? "DESC" : "ASC");
 
                 if (m_indexNameCache.FirstOrDefault(ii => ii.Name == indexName) != null) return indexName;
 
@@ -855,7 +830,7 @@ namespace OpenNETCF.ORM
                             indexName,
                             entityName,
                             fieldName,
-                            searchOrder == FieldSearchOrder.Descending ? "DESC" : string.Empty);
+                            searchOrder == FieldOrder.Descending ? "DESC" : string.Empty);
 
                         Debug.WriteLine(sql);
 

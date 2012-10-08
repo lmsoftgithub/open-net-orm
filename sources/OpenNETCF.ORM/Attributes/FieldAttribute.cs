@@ -18,10 +18,10 @@ namespace OpenNETCF.ORM
             // set up defaults
             AllowsNulls = true;
             IsPrimaryKey = false;
-            SearchOrder = FieldSearchOrder.NotSearchable;
+            SearchOrder = FieldOrder.None;
             RequireUniqueValue = false;
             IsRowVersion = false;
-            SortOrder = FieldSearchOrder.NotSearchable;
+            SortOrder = FieldOrder.None;
             SortSequence = 0;
         }
 
@@ -41,9 +41,9 @@ namespace OpenNETCF.ORM
         public bool IsIdentity { get; set; }
         public bool IsPrimaryKey { get; set; }
         public bool RequireUniqueValue { get; set; }
-        public FieldSearchOrder SearchOrder { get; set; }
+        public FieldOrder SearchOrder { get; set; }
         public String Default { get; set; }
-        public FieldSearchOrder SortOrder { get; set; }
+        public FieldOrder SortOrder { get; set; }
         public int SortSequence { get; set; }
         public string IndexName { get; set; }
 
@@ -77,7 +77,7 @@ namespace OpenNETCF.ORM
 
         public override string ToString()
         {
-            return FieldName;
+            return String.Format("{0} ({1})",FieldName,this.DataType);
         }
 
         public static string[] GetNames(Type enumType)  
@@ -90,6 +90,32 @@ namespace OpenNETCF.ORM
         {  
             FieldInfo[] fieldInfo = enumType.GetFields(BindingFlags.Static | BindingFlags.Public);
             return fieldInfo[value].Name;
+        }
+
+        public override bool Equals(object obj)
+        {
+            var f = obj as FieldAttribute;
+            if (f != null)
+            {
+                if (!(this.AllowsNulls & f.AllowsNulls)) return false;
+                if (!(this.IsPrimaryKey & f.IsPrimaryKey)) return false;
+                if (!(this.IsRowVersion & f.IsRowVersion)) return false;
+                if (!(this.DataType == f.DataType)) return false;
+                if (!(this.Default == f.Default)) return false;
+                if (!(this.FieldName.Equals(FieldName, StringComparison.InvariantCultureIgnoreCase))) return false;
+                if (!(this.Length == f.Length)) return false;
+                if (!(this.RequireUniqueValue & f.RequireUniqueValue)) return false;
+                if (!(this.SearchOrder == f.SearchOrder)) return false;
+                if (!(this.SortOrder == f.SortOrder)) return false;
+                if (!(this.Scale == f.Scale)) return false;
+                if (!(this.Precision == f.Precision)) return false;
+            }
+            return base.Equals(obj);
+        }
+
+        public override int GetHashCode()
+        {
+            return base.GetHashCode();
         }
     }
 }

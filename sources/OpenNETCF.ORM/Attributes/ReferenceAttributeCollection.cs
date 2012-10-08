@@ -19,6 +19,17 @@ namespace OpenNETCF.ORM
             m_references.Add(reference.GetHashCode(), reference);
         }
 
+        internal void AddRange(IEnumerable<ReferenceAttribute> references)
+        {
+            lock (m_references)
+            {
+                foreach (var r in references)
+                {
+                    Add(r);
+                }
+            }
+        }
+
         public int Count
         {
             get { return m_references.Count; }

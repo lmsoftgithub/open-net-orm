@@ -46,6 +46,21 @@ namespace OpenNETCF.ORM
         public TEntityInfo this[string entityName]
         {
             get { return m_entities[entityName.ToLower()]; }
+            internal set
+            {
+                if (value != null && value.EntityName.Equals(entityName,StringComparison.InvariantCultureIgnoreCase))
+                {
+                    // All existing fields NEED to have their equivalent in the new Definition.
+                    foreach (var f in m_entities[entityName.ToLower()].Fields)
+                    {
+                        if (!value.Fields.HasField(f.FieldName))
+                            return;
+                        if (!value.Fields[f.FieldName].Equals(f))
+                            return;
+                    }
+                    m_entities[entityName.ToLower()] = value;
+                }
+            }
         }
 
         public bool HasEntity(String entityName)

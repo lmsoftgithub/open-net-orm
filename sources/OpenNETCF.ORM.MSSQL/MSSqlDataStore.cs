@@ -123,7 +123,7 @@ namespace OpenNETCF.ORM
             }
         }
 
-        protected override string VerifyIndex(string entityName, string fieldName, FieldSearchOrder searchOrder, IDbConnection connection)
+        protected override string VerifyIndex(string entityName, string fieldName, FieldOrder searchOrder, IDbConnection connection)
         {
             bool localConnection = false;
             if (connection == null)
@@ -134,7 +134,7 @@ namespace OpenNETCF.ORM
             try
             {
                 var indexName = string.Format("ORM_IDX_{0}_{1}_{2}", entityName, fieldName,
-                    searchOrder == FieldSearchOrder.Descending ? "DESC" : "ASC");
+                    searchOrder == FieldOrder.Descending ? "DESC" : "ASC");
 
                 if (m_indexNameCache.FirstOrDefault(ii => ii.Name == indexName) != null) return indexName;
 
@@ -153,7 +153,7 @@ namespace OpenNETCF.ORM
                             indexName,
                             entityName,
                             fieldName,
-                            searchOrder == FieldSearchOrder.Descending ? "DESC" : string.Empty);
+                            searchOrder == FieldOrder.Descending ? "DESC" : string.Empty);
 
                         Debug.WriteLine(sql);
 
@@ -221,31 +221,6 @@ namespace OpenNETCF.ORM
                 foreach (var entity in this.Entities)
                 {
                     ValidateTable(connection, entity);
-                }
-            }
-            finally
-            {
-                DoneWithConnection(connection, true);
-            }
-        }
-
-        public override int Count<T>(IEnumerable<FilterCondition> filters)
-        {
-            var t = typeof(T);
-            string entityName = m_entities.GetNameForType(t);
-
-            if (entityName == null)
-            {
-                throw new EntityNotFoundException(t);
-            }
-
-            var connection = GetConnection(true);
-            try
-            {
-                using (var command = BuildFilterCommand<SqlCommand, SqlParameter>(entityName, filters, true, 0, 0))
-                {
-                    command.Connection = connection as SqlConnection;
-                    return (int)command.ExecuteScalar();
                 }
             }
             finally
@@ -384,17 +359,23 @@ namespace OpenNETCF.ORM
         {
             var valid = false;
 
-            string sql = string.Format("SELECT INDEX_NAME FROM information_schema.indexes WHERE (TABLE_NAME = '{0}') AND (COLUMN_NAME = '{1}')", tableName, fieldName);
+            string sql = string.Format("SELECT DISTINCT ind.name FROM sys.indexes ind INNER JOIN sys.index_columns ic ON  ind.object_id = ic.object_id and ind.index_id = ic.index_id " +
+                                       " INNER JOIN sys.tables t ON ind.object_id = t.object_id INNER JOIN sys.columns col  ON ic.object_id = col.object_id and ic.column_id = col.column_id  WHERE t.name = '{0}' AND col.name = '{1}'",
+                                       tableName, fieldName);
 
             using (SqlCommand command = new SqlCommand(sql, connection as SqlConnection))
             {
-                var name = command.ExecuteScalar() as string;
-
-                if (string.Compare(name, indexName, true) == 0)
+                using (var reader = command.ExecuteReader())
                 {
-                    valid = true;
+                    while (reader.Read())
+                    {
+                        if (string.Compare(reader.GetString(0), indexName, true) == 0)
+                        {
+                            valid = true;
+                            break;
+                        }
+                    }
                 }
-
                 if (!valid)
                 {
                     sql = string.Format("CREATE INDEX {0} ON {1}({2} {3})",

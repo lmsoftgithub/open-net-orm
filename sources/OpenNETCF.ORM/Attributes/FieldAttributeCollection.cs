@@ -75,6 +75,12 @@ namespace OpenNETCF.ORM
             return m_fields.Values.GetEnumerator();
         }
 
+        internal void Remove(FieldAttribute field)
+        {
+            if (m_fields.ContainsKey(field.FieldName.ToLower()))
+                m_fields.Remove(field.FieldName.ToLower());
+        }
+
         public bool HasField(String fieldName)
         {
             return m_fields.ContainsKey(fieldName.ToLower());

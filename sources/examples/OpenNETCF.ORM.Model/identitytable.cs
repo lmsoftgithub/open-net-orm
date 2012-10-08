@@ -16,7 +16,7 @@ namespace OpenNETCF.ORM.Model
         [Field(IsPrimaryKey = true, DataType = System.Data.DbType.Int64)]
         public Int64 pid { get; set; }
 
-        [Field(DataType = System.Data.DbType.Int32, SearchOrder=FieldSearchOrder.Ascending)]
+        [Field(DataType = System.Data.DbType.Int32, SearchOrder=FieldOrder.Ascending)]
         public Int32 numfield { get; set; }
 
         [Field(Length = 50, DataType = System.Data.DbType.AnsiString)]

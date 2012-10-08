@@ -7,9 +7,9 @@ using System.Reflection;
 
 namespace OpenNETCF.ORM
 {
-    public enum FieldSearchOrder
+    public enum FieldOrder
     {
-        NotSearchable = 0,
+        None = 0,
         Ascending = 1,
         Descending = 2
     }

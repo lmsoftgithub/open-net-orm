@@ -29,7 +29,8 @@ namespace OpenNETCF.ORM
             }
             set
             {
-                if (value != null && ValueType != null && ValueType.Equals(value.GetType())) throw new InvalidCastException(String.Format("Cannot cast '{0}' to '{1}' for field {2}", ValueType.ToString(), value.GetType().ToString(), Name));
+                if (value != null && ValueType != null && !ValueType.Equals(value.GetType()))
+                    throw new InvalidCastException(String.Format("Cannot cast '{0}' to '{1}' for field {2}", ValueType.ToString(), value.GetType().ToString(), Name));
                 this._value = value;
             }
         }

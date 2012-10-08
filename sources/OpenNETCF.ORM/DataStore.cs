@@ -35,6 +35,8 @@ namespace OpenNETCF.ORM
         public abstract bool FieldExists(EntityInfo entityInfo, FieldAttribute fieldInfo);
         protected abstract void CreateTable(EntityInfo entity);
 
+        public abstract List<DynamicEntityInfo> ReverseEngineer();
+
         public void Insert(object item)
         {
             Insert(item, false);
@@ -92,15 +94,18 @@ namespace OpenNETCF.ORM
         public abstract T[] Fetch<T>(int fetchCount) where T : new();
         public abstract T[] Fetch<T>(int fetchCount, int firstRowOffset) where T : new();
         public abstract T[] Fetch<T>(int fetchCount, int firstRowOffset, string sortField) where T : new();
-        public abstract T[] Fetch<T>(int fetchCount, int firstRowOffset, string sortField, FieldSearchOrder sortOrder, FilterCondition filter, bool fillReferences) where T : new();
-        public abstract T[] Fetch<T>(int fetchCount, int firstRowOffset, string sortField, FieldSearchOrder sortOrder, FilterCondition filter, bool fillReferences, bool filterReferences) where T : new();
+        public abstract T[] Fetch<T>(int fetchCount, int firstRowOffset, string sortField, FieldOrder sortOrder, FilterCondition filter, bool fillReferences) where T : new();
+        public abstract T[] Fetch<T>(int fetchCount, int firstRowOffset, string sortField, FieldOrder sortOrder, FilterCondition filter, bool fillReferences, bool filterReferences) where T : new();
         public abstract object[] Fetch(Type entityType, int fetchCount, int firstRowOffset, bool fillReferences);
         public abstract object[] Fetch(Type entityType, int fetchCount, int firstRowOffset, bool fillReferences, bool filterReferences);
-        public abstract object[] Fetch(Type entityType, int fetchCount, int firstRowOffset, string sortField, FieldSearchOrder sortOrder, FilterCondition filter, bool fillReferences, bool filterReferences);
+        public abstract object[] Fetch(Type entityType, int fetchCount, int firstRowOffset, string sortField, FieldOrder sortOrder, FilterCondition filter, bool fillReferences, bool filterReferences);
 
         public abstract int Count<T>();
-        public abstract int Count(System.Type entityType);
         public abstract int Count<T>(IEnumerable<FilterCondition> filters);
+        public abstract int Count(Type entityType);
+        public abstract int Count(Type entityType, IEnumerable<FilterCondition> filters);
+        public abstract int Count(String entityName);
+        public abstract int Count(String entityName, IEnumerable<FilterCondition> filters);
 
         public abstract int Delete(object item, bool cascade);
         public abstract int Delete<T>(object primaryKey, bool cascade);
@@ -116,8 +121,10 @@ namespace OpenNETCF.ORM
 
         public abstract void Drop<T>(bool cascade);
         public abstract void Drop(Type entityType, bool cascade);
+        public abstract void Drop(String entityName, bool cascade);
         public abstract void DropAndCreateTable<T>(bool cascade);
         public abstract void DropAndCreateTable(Type entityType, bool cascade);
+        public abstract void DropAndCreateTable(String entityName, bool cascade);
 
         public DataStore()
         {
@@ -270,7 +277,8 @@ namespace OpenNETCF.ORM
                     {
                         attribute.FieldName = prop.Name;
                     }
-
+                    attribute.FieldName = attribute.FieldName.Replace(" ", "_");
+                    
                     if (!attribute.DataTypeIsValid)
                     {
                         // TODO: add custom converter support here
@@ -280,7 +288,7 @@ namespace OpenNETCF.ORM
                     if (attribute.IsPrimaryKey & map.EntityAttribute.KeyScheme == KeyScheme.Identity)
                         attribute.IsIdentity = true;
                     map.Fields.Add(attribute);
-                    if (attribute.SortOrder != FieldSearchOrder.NotSearchable)
+                    if (attribute.SortOrder != FieldOrder.None)
                         map.SortingFields.Add(attribute);
                 }
                 else
@@ -313,21 +321,46 @@ namespace OpenNETCF.ORM
             {
                 throw new OpenNETCF.ORM.EntityDefinitionException(map.EntityName, string.Format("Entity '{0}' Contains references but does have an invalid Primary Key count ({1}).", map.EntityName, map.Fields.KeyFields.Count));
             }
-            var methodInfo = entityType.GetMethod("ORM_CreateProxy", BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance);
-            if (methodInfo != null)
+            var createProxyMethod = entityType.GetMethod("ORM_CreateProxy", BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance);
+            if (createProxyMethod != null)
             {
-                var parameters = methodInfo.GetParameters();
+                var parameters = createProxyMethod.GetParameters();
                 if (parameters.Length >= 2 && parameters[1].ParameterType.Equals(typeof(System.Collections.Generic.IDictionary<string, int>)))
                 {
-                    map.CreateProxy = (EntityInfo.CreateProxyDelegate)Delegate.CreateDelegate(typeof(EntityInfo.CreateProxyDelegate),null, methodInfo);
+                    map.CreateProxy = (EntityInfo.CreateProxyDelegate)Delegate.CreateDelegate(typeof(EntityInfo.CreateProxyDelegate),null, createProxyMethod);
                 }
             }
 
             var ctor = entityType.GetConstructor(new Type[]{});
             if (ctor != null)
                 map.DefaultConstructor = ctor;
-            else // If a createProxy exists, we'll never need the constructor, but, in order to ensure compatibility with future versions/changes... it's best to require it.
+            else // We want a default constructor because we want the ability to instantiate new empty objects to fill in.
                 throw new EntityDefinitionException(entityType.ToString(), "The Type doesn't have a parameterless default constructor");
+
+            var serializerMethod = entityType.GetMethod("Serialize", BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance);
+            if (serializerMethod != null)
+            {
+                var serParameters = serializerMethod.GetParameters();
+                if (serParameters.Length >= 2 &&
+                    serParameters[0].ParameterType.Equals(typeof(object)) &&
+                    serParameters[1].ParameterType.Equals(typeof(string)))
+                {
+                    var deserializerMethod = entityType.GetMethod("Deserialize", BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance);
+                    if (deserializerMethod != null)
+                    {
+                        var desParameters = deserializerMethod.GetParameters();
+                        if (desParameters.Length >= 3 &&
+                            desParameters[0].ParameterType.Equals(typeof(object)) &&
+                            desParameters[1].ParameterType.Equals(typeof(string)) &&
+                            desParameters[2].ParameterType.Equals(typeof(object)))
+                        {
+                            map.Serializer = (EntityInfo.SerializerDelegate)Delegate.CreateDelegate(typeof(EntityInfo.SerializerDelegate), null, serializerMethod);
+                            map.Deserializer = (EntityInfo.DeserializerDelegate)Delegate.CreateDelegate(typeof(EntityInfo.DeserializerDelegate), null, deserializerMethod);
+                        }
+                    }
+                }
+            }
+
             m_entities.Add(map);
             OnTypeAdded(map);
         }
@@ -347,9 +380,25 @@ namespace OpenNETCF.ORM
 
         public virtual void RegisterEntity(EntityInfo entity)
         {
-            if (m_entities.HasEntity(entity.EntityName)) throw new EntityDefinitionException(entity.EntityName, "The entity already exists in the DataStore");
-            if (!(entity is TEntityInfo)) throw new InvalidCastException(string.Format("The entity '{0}' has does not match the EntityInfo type ({1})", entity.EntityName, typeof(TEntityInfo).ToString()));
-            m_entities.Add((TEntityInfo)entity);
+            if (!(entity is TEntityInfo)) throw new InvalidCastException(string.Format("The entity '{0}' does not match the EntityInfo type ({1})", entity.EntityName, typeof(TEntityInfo).ToString()));
+            if (m_entities.HasEntity(entity.EntityName))
+            {
+                // We check if the existing entity is a DynamicEntityInfo, if not, then we cannot replace/update it.
+                if (!(m_entities[entity.EntityName] is DynamicEntityInfo)) throw new EntityDefinitionException(entity.EntityName, "A static Entity with the same name already exists in the DataStore");
+                // Next, we check if all the fields of the existing entity are the same as those from the current entity.
+                foreach (var f in m_entities[entity.EntityName].Fields)
+                {
+                    if (!entity.Fields.HasField(f.FieldName))
+                        throw new EntityDefinitionException(entity.EntityName, String.Format("The new Entity Definition is missing the  '{0}' field", f.FieldName));
+                    if (!entity.Fields[f.FieldName].Equals(f))
+                        throw new EntityDefinitionException(entity.EntityName, String.Format("The existing field '{0}' does not match the new Entity Definition", f.FieldName));
+                }
+                m_entities[entity.EntityName] = (TEntityInfo)entity;
+            }
+            else
+            {
+                m_entities.Add((TEntityInfo)entity);
+            }
             if (StoreExists) CreateTable(entity);
             if (entity is DynamicEntityInfo)
             {
@@ -360,38 +409,54 @@ namespace OpenNETCF.ORM
 
         protected virtual void DynamicEntityInfo_EntityDefinitionChanged(object sender, EntityTypeChangedArgs e)
         {
-            if (e.EntityInfo != null && e.FieldAttribute != null)
+            try
             {
-                if (!FieldExists(e.EntityInfo, e.FieldAttribute))
+                if (e.EntityInfo != null && e.FieldAttribute != null)
                 {
-                    if (!e.TableCreated && StoreExists)
+                    if (!FieldExists(e.EntityInfo, e.FieldAttribute))
                     {
-                        CreateTable(e.EntityInfo);
-                        e.TableCreated = true;
+                        if (!e.TableCreated && StoreExists)
+                        {
+                            CreateTable(e.EntityInfo);
+                            e.TableCreated = true;
+                        }
+                        OnTypeModified(e.EntityInfo, e.FieldAttribute, e.TableCreated);
                     }
-                    OnTypeModified(e.EntityInfo, e.FieldAttribute, e.TableCreated);
                 }
+            }
+            catch (Exception ex)
+            {
+                if (!FieldExists(e.EntityInfo, e.FieldAttribute)) e.EntityInfo.Fields.Remove(e.FieldAttribute);
+                throw ex;
             }
         }
 
         protected void AddFieldToEntity(EntityInfo entity, FieldAttribute field)
         {
-            if (entity != null && field != null && !entity.Fields.HasField(field.FieldName))
+            try
             {
-                if (StoreExists && TableExists(entity))
+                if (entity != null && field != null && !entity.Fields.HasField(field.FieldName))
                 {
-                    if (!FieldExists(entity, field))
+                    if (StoreExists && TableExists(entity))
+                    {
+                        if (!FieldExists(entity, field))
+                        {
+                            entity.Fields.Add(field);
+                            CreateTable(entity);
+                            OnTypeModified(entity, field, true);
+                        }
+                    }
+                    else
                     {
                         entity.Fields.Add(field);
-                        CreateTable(entity);
-                        OnTypeModified(entity, field, true);
+                        OnTypeModified(entity, field, false);
                     }
                 }
-                else
-                {
-                    entity.Fields.Add(field);
-                    OnTypeModified(entity, field, false);
-                }
+            }
+            catch (Exception ex)
+            {
+                if (!FieldExists(entity, field)) entity.Fields.Remove(field);
+                throw ex;
             }
         }
 

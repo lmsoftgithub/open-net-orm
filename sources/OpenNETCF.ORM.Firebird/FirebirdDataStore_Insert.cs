@@ -52,13 +52,23 @@ namespace OpenNETCF.ORM
 
         protected override void Insert(object item, bool insertReferences, IDbConnection connection, IDbTransaction transaction, bool checkUpdates)
         {
-            var itemType = item.GetType();
-            string entityName = m_entities.GetNameForType(itemType);
+            var isDynamicEntity = item is DynamicEntity;
+            string entityName = null;
+            if (isDynamicEntity)
+            {
+                entityName = ((DynamicEntity)item).EntityName;
+                if (!m_entities.HasEntity(entityName)) throw new EntityNotFoundException(entityName);
+            }
+            else
+            {
+                entityName = m_entities.GetNameForType(item.GetType());
+            }
 
             if (entityName == null)
             {
                 throw new EntityNotFoundException(item.GetType());
             }
+            var entity = m_entities[entityName];
 
             Boolean bInheritedConnection = connection != null;
             if (transaction == null && connection == null)
@@ -88,18 +98,23 @@ namespace OpenNETCF.ORM
                         identity = field;
                         continue;
                     }
-                    else if (field.DataType == DbType.Object)
+                    else if (isDynamicEntity)
                     {
-                        // get serializer
-                        var serializer = GetSerializer(itemType);
-
-                        if (serializer == null)
+                        object value = null;
+                        if (entity.Fields[field.FieldName].DataType == DbType.Object)
                         {
-                            throw new MissingMethodException(
-                                string.Format("The field '{0}' requires a custom serializer/deserializer method pair in the '{1}' Entity",
-                                field.FieldName, entityName));
+                            if (entity.Serializer == null)
+                            {
+                                throw new MissingMethodException(
+                                    string.Format("The field '{0}' requires a custom serializer/deserializer method pair in the '{1}' Entity",
+                                    field.FieldName, entity.EntityName));
+                            }
+                            value = entity.Serializer.Invoke(item, field.FieldName);
                         }
-                        var value = serializer.Invoke(item, new object[] { field.FieldName });
+                        else
+                        {
+                            value = ((DynamicEntity)item)[field.FieldName];
+                        }
                         if (value == null)
                         {
                             command.Parameters[String.Format("@{0}", field.FieldName)].Value = DBNull.Value;
@@ -109,29 +124,50 @@ namespace OpenNETCF.ORM
                             command.Parameters[String.Format("@{0}", field.FieldName)].Value = value;
                         }
                     }
-                    else if (field.IsRowVersion)
+                    else
                     {
-                        // read-only, so do nothing
-                    }
-                    else if (field.PropertyInfo.PropertyType.UnderlyingTypeIs<TimeSpan>())
-                    {
-                        // SQL Compact doesn't support Time, so we're convert to a DateTime both directions
-                        var value = field.PropertyInfo.GetValue(item, null);
-
-                        if (value == null)
+                        if (field.DataType == DbType.Object)
                         {
-                            command.Parameters[String.Format("@{0}", field.FieldName)].Value = DBNull.Value;
+                            if (entity.Serializer == null)
+                            {
+                                throw new MissingMethodException(
+                                    string.Format("The field '{0}' requires a custom serializer/deserializer method pair in the '{1}' Entity",
+                                    field.FieldName, entityName));
+                            }
+                            var value = entity.Serializer.Invoke(item, field.FieldName);
+                            if (value == null)
+                            {
+                                command.Parameters[String.Format("@{0}", field.FieldName)].Value = DBNull.Value;
+                            }
+                            else
+                            {
+                                command.Parameters[String.Format("@{0}", field.FieldName)].Value = value;
+                            }
+                        }
+                        else if (field.IsRowVersion)
+                        {
+                            // read-only, so do nothing
+                        }
+                        else if (field.PropertyInfo.PropertyType.UnderlyingTypeIs<TimeSpan>())
+                        {
+                            // SQL Compact doesn't support Time, so we're convert to a DateTime both directions
+                            var value = field.PropertyInfo.GetValue(item, null);
+
+                            if (value == null)
+                            {
+                                command.Parameters[String.Format("@{0}", field.FieldName)].Value = DBNull.Value;
+                            }
+                            else
+                            {
+                                var timespanTicks = ((TimeSpan)value).Ticks;
+                                command.Parameters[String.Format("@{0}", field.FieldName)].Value = timespanTicks;
+                            }
                         }
                         else
                         {
-                            var timespanTicks = ((TimeSpan)value).Ticks;
-                            command.Parameters[String.Format("@{0}", field.FieldName)].Value = timespanTicks;
+                            var value = field.PropertyInfo.GetValue(item, null);
+                            if (value != null) command.Parameters[String.Format("@{0}", field.FieldName)].Value = value;
                         }
-                    }
-                    else
-                    {
-                        var value = field.PropertyInfo.GetValue(item, null);
-                        if (value != null) command.Parameters[String.Format("@{0}", field.FieldName)].Value = value;
                     }
                 }
 
@@ -149,7 +185,14 @@ namespace OpenNETCF.ORM
                     {
                         id = GetIdentity(transaction);
                     }
-                    identity.PropertyInfo.SetValue(item, id, null);
+                    if (isDynamicEntity)
+                    {
+                        ((DynamicEntity)item)[identity.FieldName] = id;
+                    }
+                    else
+                    {
+                        identity.PropertyInfo.SetValue(item, id, null);
+                    }
                 }
 
                 if (insertReferences)

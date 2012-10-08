@@ -130,6 +130,24 @@ namespace OpenNETCF.ORM
         }
         protected abstract void Insert(object item, bool insertReferences, IDbConnection connection, IDbTransaction transaction, bool checkUpdate);
 
+
+        /// <summary>
+        /// Updates the backing DataStore with the values in the specified entity instance
+        /// </summary>
+        /// <param name="item"></param>
+        /// <remarks>
+        /// The instance provided must have a valid primary key value
+        /// </remarks>
+        public override void Update(object item)
+        {
+            //TODO: is a cascading default of true a good idea?
+            Update(item, true, null);
+        }
+
+        public override void Update(object item, string fieldName)
+        {
+            Update(item, false, fieldName);
+        }
         public override void Update(object item, bool cascadeUpdates, string fieldName)
         {
             Update(item, cascadeUpdates, fieldName, false);
@@ -219,8 +237,6 @@ namespace OpenNETCF.ORM
             }
         }
         protected abstract void BulkInsertOrUpdate(object items, bool insertReferences, IDbConnection connection, IDbTransaction transaction);
-
-        public abstract override int Count<T>(IEnumerable<FilterCondition> filters);
 
         protected abstract IDbCommand GetNewCommandObject();
         protected abstract IDbConnection GetNewConnectionObject();
@@ -578,7 +594,7 @@ namespace OpenNETCF.ORM
                 bTableExists = true;
                 foreach (var field in entity.Fields)
                 {
-                    if (field.SearchOrder != FieldSearchOrder.NotSearchable)
+                    if (field.SearchOrder != FieldOrder.None)
                     {
                         field.IndexName = VerifyIndex(entity.EntityName, field.FieldName, field.SearchOrder, connection);
                     }
@@ -610,7 +626,7 @@ namespace OpenNETCF.ORM
                             int i = command.ExecuteNonQuery();
                         }
                         // create indexes
-                        if (field.SearchOrder != FieldSearchOrder.NotSearchable)
+                        if (field.SearchOrder != FieldOrder.None)
                         {
                             field.IndexName = VerifyIndex(entity.EntityName, field.FieldName, field.SearchOrder, connection);
                         }
@@ -618,7 +634,7 @@ namespace OpenNETCF.ORM
                     else
                     {
                         // create indexes
-                        if (field.SearchOrder != FieldSearchOrder.NotSearchable)
+                        if (field.SearchOrder != FieldOrder.None)
                         {
                             field.IndexName = VerifyIndex(entity.EntityName, field.FieldName, field.SearchOrder, connection);
                         }
@@ -652,20 +668,30 @@ namespace OpenNETCF.ORM
 
         public override void DropAndCreateTable(Type entityType, bool cascade)
         {
+            if (entityType.Equals(typeof(DynamicEntity)))
+            {
+                throw new ArgumentException("DynamicEntities must be dropped with one of the other Drop overloads.");
+            }
+
             string entityName = m_entities.GetNameForType(entityType);
 
             if (entityName == null)
             {
                 throw new EntityNotFoundException(entityType);
             }
+            DropAndCreateTable(entityName, cascade);
+        }
 
-            //TODO: Handle cascade drops
+        public override void DropAndCreateTable(String entityName, bool cascade)
+        {
+            if (!m_entities.HasEntity(entityName)) throw new EntityNotFoundException(entityName);
+
             EntityInfo entity = m_entities[entityName];
 
             var connection = GetConnection(true);
             try
             {
-                DropAndCreateTable(connection, entity,cascade);
+                DropAndCreateTable(connection, entity, cascade);
             }
             finally
             {
@@ -770,12 +796,12 @@ namespace OpenNETCF.ORM
             return m_indexNameCache.FirstOrDefault(ii => ii.Name == indexName);
         }
 
-        protected virtual string VerifyIndex(string entityName, string fieldName, FieldSearchOrder searchOrder)
+        protected virtual string VerifyIndex(string entityName, string fieldName, FieldOrder searchOrder)
         {
             return VerifyIndex(entityName, fieldName, searchOrder, null);
         }
 
-        protected virtual string VerifyIndex(string entityName, string fieldName, FieldSearchOrder searchOrder, IDbConnection connection)
+        protected virtual string VerifyIndex(string entityName, string fieldName, FieldOrder searchOrder, IDbConnection connection)
         {
             bool localConnection = false;
             if (connection == null)
@@ -786,7 +812,7 @@ namespace OpenNETCF.ORM
             try
             {
                 var indexName = string.Format("ORM_IDX_{0}_{1}_{2}", entityName, fieldName,
-                    searchOrder == FieldSearchOrder.Descending ? "DESC" : "ASC");
+                    searchOrder == FieldOrder.Descending ? "DESC" : "ASC");
                 
                 if (m_indexNameCache.FirstOrDefault(ii => ii.Name == indexName) != null) return indexName;
 
@@ -805,7 +831,7 @@ namespace OpenNETCF.ORM
                             indexName,
                             entityName,
                             fieldName,
-                            searchOrder == FieldSearchOrder.Descending ? "DESC" : string.Empty);
+                            searchOrder == FieldOrder.Descending ? "DESC" : string.Empty);
 
                         Debug.WriteLine(sql);
 
@@ -945,12 +971,12 @@ namespace OpenNETCF.ORM
                 }
             }
 
-            if (!field.AllowsNulls)
+            if (!field.AllowsNulls & !field.IsPrimaryKey)
             {
                 sb.Append("NOT NULL ");
             }
 
-            if (field.RequireUniqueValue)
+            if (field.RequireUniqueValue & !field.IsPrimaryKey)
             {
                 sb.Append("UNIQUE ");
             }
@@ -958,6 +984,7 @@ namespace OpenNETCF.ORM
             return sb.ToString();
         }
 
+        [Obsolete("Replace with entity Delegate")]
         protected virtual MethodInfo GetSerializer(Type itemType)
         {
             if (m_serializerCache.ContainsKey(itemType))
@@ -973,6 +1000,7 @@ namespace OpenNETCF.ORM
             return serializer;
         }
 
+        [Obsolete("Replace with entity Delegate")]
         protected virtual MethodInfo GetDeserializer(Type itemType)
         {
             if (m_deserializerCache.ContainsKey(itemType))
@@ -1018,6 +1046,11 @@ namespace OpenNETCF.ORM
             return existing != null;
         }
 
+        public override List<DynamicEntityInfo> ReverseEngineer()
+        {
+            throw new NotImplementedException();
+        }
+
         /// <summary>
         /// Retrieves a single entity instance from the DataStore identified by the specified primary key value
         /// </summary>
@@ -1026,17 +1059,17 @@ namespace OpenNETCF.ORM
         /// <returns></returns>
         public override T Select<T>(object primaryKey)
         {
-            return (T)Select(typeof(T).ToString(), null, primaryKey, -1, -1, false, false, null).FirstOrDefault();
+            return (T)Select(m_entities.GetNameForType(typeof(T)), null, primaryKey, -1, -1, false, false, null).FirstOrDefault();
         }
 
         public override T Select<T>(object primaryKey, bool fillReferences)
         {
-            return (T)Select(typeof(T).ToString(), null, primaryKey, -1, -1, fillReferences, false, null).FirstOrDefault();
+            return (T)Select(m_entities.GetNameForType(typeof(T)), null, primaryKey, -1, -1, fillReferences, false, null).FirstOrDefault();
         }
 
         public override T Select<T>(object primaryKey, bool fillReferences, bool filterReferences)
         {
-            return (T)Select(typeof(T).ToString(), null, primaryKey, -1, -1, fillReferences, filterReferences, null).FirstOrDefault();
+            return (T)Select(m_entities.GetNameForType(typeof(T)), null, primaryKey, -1, -1, fillReferences, filterReferences, null).FirstOrDefault();
         }
 
         /// <summary>
@@ -1046,7 +1079,11 @@ namespace OpenNETCF.ORM
         /// <returns></returns>
         public override T[] Select<T>()
         {
-            return Select(typeof(T).ToString(), null, -1, -1, false, false, null).Cast<T>().ToArray();
+            if (typeof(T).Equals(typeof(DynamicEntity)) || typeof(T).Equals(typeof(DynamicEntityInfo)))
+            {
+                throw new ArgumentException("DynamicEntities must be counted with one of the other Count overloads.");
+            }
+            return Select(m_entities.GetNameForType(typeof(T)), null, -1, -1, false, false, null).Cast<T>().ToArray();
         }
 
         /// <summary>
@@ -1056,7 +1093,11 @@ namespace OpenNETCF.ORM
         /// <returns></returns>
         public override T[] Select<T>(bool fillReferences)
         {
-            return Select(typeof(T).ToString(), null, -1, -1, fillReferences, false, null).Cast<T>().ToArray();
+            if (typeof(T).Equals(typeof(DynamicEntity)) || typeof(T).Equals(typeof(DynamicEntityInfo)))
+            {
+                throw new ArgumentException("DynamicEntities must be counted with one of the other Count overloads.");
+            }
+            return Select(m_entities.GetNameForType(typeof(T)), null, -1, -1, fillReferences, false, null).Cast<T>().ToArray();
         }
 
         /// <summary>
@@ -1068,7 +1109,11 @@ namespace OpenNETCF.ORM
         /// <returns></returns>
         public override T[] Select<T>(bool fillReferences, bool filterReferences)
         {
-            return Select(typeof(T).ToString(), null, -1, -1, fillReferences, filterReferences, null).Cast<T>().ToArray();
+            if (typeof(T).Equals(typeof(DynamicEntity)) || typeof(T).Equals(typeof(DynamicEntityInfo)))
+            {
+                throw new ArgumentException("DynamicEntities must be counted with one of the other Count overloads.");
+            }
+            return Select(m_entities.GetNameForType(typeof(T)), null, -1, -1, fillReferences, filterReferences, null).Cast<T>().ToArray();
         }
 
         /// <summary>
@@ -1078,62 +1123,110 @@ namespace OpenNETCF.ORM
         /// <returns></returns>
         public override object[] Select(Type entityType)
         {
-            return Select(entityType.ToString(), null, -1, -1, false, false, null);
+            if (entityType.Equals(typeof(DynamicEntity)) || entityType.Equals(typeof(DynamicEntityInfo)))
+            {
+                throw new ArgumentException("DynamicEntities must be counted with one of the other Count overloads.");
+            }
+            return Select(m_entities.GetNameForType(entityType), null, -1, -1, false, false, null);
         }
 
         public override object[] Select(Type entityType, bool fillReferences)
         {
-            return Select(entityType.ToString(), null, -1, -1, fillReferences, false, null);
+            if (entityType.Equals(typeof(DynamicEntity)) || entityType.Equals(typeof(DynamicEntityInfo)))
+            {
+                throw new ArgumentException("DynamicEntities must be counted with one of the other Count overloads.");
+            }
+            return Select(m_entities.GetNameForType(entityType), null, -1, -1, fillReferences, false, null);
         }
 
         public override object[] Select(Type entityType, bool fillReferences, bool filterReferences)
         {
-            return Select(entityType.ToString(), null, null, -1, 0, fillReferences, filterReferences, null);
+            if (entityType.Equals(typeof(DynamicEntity)) || entityType.Equals(typeof(DynamicEntityInfo)))
+            {
+                throw new ArgumentException("DynamicEntities must be counted with one of the other Count overloads.");
+            }
+            return Select(m_entities.GetNameForType(entityType), null, null, -1, 0, fillReferences, filterReferences, null);
         }
 
         public override object[] Select(Type entityType, object primaryKey, bool fillReferences, bool filterReferences)
         {
-            return Select(entityType.ToString(), null, primaryKey, -1, 0, fillReferences, filterReferences, null);
+            if (entityType.Equals(typeof(DynamicEntity)) || entityType.Equals(typeof(DynamicEntityInfo)))
+            {
+                throw new ArgumentException("DynamicEntities must be counted with one of the other Count overloads.");
+            }
+            return Select(m_entities.GetNameForType(entityType), null, primaryKey, -1, 0, fillReferences, filterReferences, null);
         }
 
         public override object[] Select(Type entityType, IEnumerable<FilterCondition> filters, bool fillReferences)
         {
-            return Select(entityType.ToString(), filters, -1, -1, fillReferences, false, null);
+            if (entityType.Equals(typeof(DynamicEntity)) || entityType.Equals(typeof(DynamicEntityInfo)))
+            {
+                throw new ArgumentException("DynamicEntities must be counted with one of the other Count overloads.");
+            }
+            return Select(m_entities.GetNameForType(entityType), filters, -1, -1, fillReferences, false, null);
         }
 
         public override object[] Select(Type entityType, IEnumerable<FilterCondition> filters, bool fillReferences, bool filterReferences)
         {
-            return Select(entityType.ToString(), filters, -1, -1, fillReferences, filterReferences, null);
+            if (entityType.Equals(typeof(DynamicEntity)) || entityType.Equals(typeof(DynamicEntityInfo)))
+            {
+                throw new ArgumentException("DynamicEntities must be counted with one of the other Count overloads.");
+            }
+            return Select(m_entities.GetNameForType(entityType), filters, -1, -1, fillReferences, filterReferences, null);
         }
 
         public override T[] Select<T>(string searchFieldName, object matchValue)
         {
-            return Select(typeof(T).ToString(), searchFieldName, matchValue, -1, 0, false, false, null).Cast<T>().ToArray();
+            if (typeof(T).Equals(typeof(DynamicEntity)) || typeof(T).Equals(typeof(DynamicEntityInfo)))
+            {
+                throw new ArgumentException("DynamicEntities must be counted with one of the other Count overloads.");
+            }
+            return Select(m_entities.GetNameForType(typeof(T)), searchFieldName, matchValue, -1, 0, false, false, null).Cast<T>().ToArray();
         }
 
         public override T[] Select<T>(string searchFieldName, object matchValue, bool fillReferences)
         {
-            return Select(typeof(T).ToString(), searchFieldName, matchValue, -1, 0, fillReferences, false, null).Cast<T>().ToArray();
+            if (typeof(T).Equals(typeof(DynamicEntity)) || typeof(T).Equals(typeof(DynamicEntityInfo)))
+            {
+                throw new ArgumentException("DynamicEntities must be counted with one of the other Count overloads.");
+            }
+            return Select(m_entities.GetNameForType(typeof(T)), searchFieldName, matchValue, -1, 0, fillReferences, false, null).Cast<T>().ToArray();
         }
 
         public override T[] Select<T>(string searchFieldName, object matchValue, bool fillReferences, bool filterReferences)
         {
-            return Select(typeof(T).ToString(), searchFieldName, matchValue, -1, 0, fillReferences, filterReferences, null).Cast<T>().ToArray();
+            if (typeof(T).Equals(typeof(DynamicEntity)) || typeof(T).Equals(typeof(DynamicEntityInfo)))
+            {
+                throw new ArgumentException("DynamicEntities must be counted with one of the other Count overloads.");
+            }
+            return Select(m_entities.GetNameForType(typeof(T)), searchFieldName, matchValue, -1, 0, fillReferences, filterReferences, null).Cast<T>().ToArray();
         }
 
         public override T[] Select<T>(IEnumerable<FilterCondition> filters)
         {
-            return Select(typeof(T).ToString(), filters, -1, 0, false, false, null).Cast<T>().ToArray();
+            if (typeof(T).Equals(typeof(DynamicEntity)) || typeof(T).Equals(typeof(DynamicEntityInfo)))
+            {
+                throw new ArgumentException("DynamicEntities must be counted with one of the other Count overloads.");
+            }
+            return Select(m_entities.GetNameForType(typeof(T)), filters, -1, 0, false, false, null).Cast<T>().ToArray();
         }
 
         public override T[] Select<T>(IEnumerable<FilterCondition> filters, bool fillReferences)
         {
-            return Select(typeof(T).ToString(), filters, -1, 0, fillReferences, false, null).Cast<T>().ToArray();
+            if (typeof(T).Equals(typeof(DynamicEntity)) || typeof(T).Equals(typeof(DynamicEntityInfo)))
+            {
+                throw new ArgumentException("DynamicEntities must be counted with one of the other Count overloads.");
+            }
+            return Select(m_entities.GetNameForType(typeof(T)), filters, -1, 0, fillReferences, false, null).Cast<T>().ToArray();
         }
 
         public override T[] Select<T>(IEnumerable<FilterCondition> filters, bool fillReferences, bool filterReferences)
         {
-            return Select(typeof(T).ToString(), filters, -1, 0, fillReferences, filterReferences, null).Cast<T>().ToArray();
+            if (typeof(T).Equals(typeof(DynamicEntity)) || typeof(T).Equals(typeof(DynamicEntityInfo)))
+            {
+                throw new ArgumentException("DynamicEntities must be counted with one of the other Count overloads.");
+            }
+            return Select(m_entities.GetNameForType(typeof(T)), filters, -1, 0, fillReferences, filterReferences, null).Cast<T>().ToArray();
         }
 
         public override object[] Select(String entityName)
@@ -1253,7 +1346,7 @@ namespace OpenNETCF.ORM
             if (isCount)
             {
                 FieldAttribute fa = (from FieldAttribute el in Entities[entityName].Fields
-                                    where el.IsPrimaryKey || el.SearchOrder != FieldSearchOrder.NotSearchable
+                                    where el.IsPrimaryKey || el.SearchOrder != FieldOrder.None
                                     select el).FirstOrDefault<FieldAttribute>();
                 if (fa == null)
                 {
@@ -1300,7 +1393,7 @@ namespace OpenNETCF.ORM
                 sb.Append(" ORDER BY ");
                 foreach (FieldAttribute fa in Entities[entityName].SortingFields.OrderBy(d => d.SortSequence))
                 {
-                    if (fa.SortOrder == FieldSearchOrder.Descending)
+                    if (fa.SortOrder == FieldOrder.Descending)
                         sb.AppendFormat(" {0} DESC,", fa.FieldName);
                     else
                         sb.AppendFormat(" {0} ASC,", fa.FieldName);
@@ -1412,7 +1505,16 @@ namespace OpenNETCF.ORM
         protected virtual void CascadeUpdates(object item, string fieldName, object keyValue, EntityInfo entity, IDbConnection connection, IDbTransaction transaction)
         {
             if (keyValue == null && entity.Fields.KeyField != null)
-                keyValue = entity.Fields.KeyField.PropertyInfo.GetValue(item, null);
+            {
+                if (item is DynamicEntity)
+                {
+                    keyValue = ((DynamicEntity)item)[entity.Fields.KeyField.FieldName];
+                }
+                else
+                {
+                    keyValue = entity.Fields.KeyField.PropertyInfo.GetValue(item, null);
+                }
+            }
 
             foreach (var reference in entity.References)
             {
@@ -1602,40 +1704,16 @@ namespace OpenNETCF.ORM
                 }
             }
         }
-
-        /// <summary>
-        /// Updates the backing DataStore with the values in the specified entity instance
-        /// </summary>
-        /// <param name="item"></param>
-        /// <remarks>
-        /// The instance provided must have a valid primary key value
-        /// </remarks>
-        public override void Update(object item)
-        {
-            //TODO: is a cascading default of true a good idea?
-            Update(item, true, null);
-        }
-
-        public override void Update(object item, string fieldName)
-        {
-            Update(item, false, fieldName);
-        }
-
-        /// <summary>
-        /// Deletes all entity instances of the specified type from the DataStore
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
         public override void Drop<T>(bool cascade)
         {
             Drop(typeof(T), cascade);
         }
-
-        /// <summary>
-        /// Deletes all entity instances of the specified type from the DataStore
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
         public override void Drop(System.Type entityType, bool cascade)
         {
+            if (entityType.Equals(typeof(DynamicEntity)) || entityType.Equals(typeof(DynamicEntityInfo)))
+            {
+                throw new ArgumentException("DynamicEntities must be dropped with one of the other Drop overloads.");
+            }
             string entityName = m_entities.GetNameForType(entityType);
 
             if (entityName == null)
@@ -1643,7 +1721,13 @@ namespace OpenNETCF.ORM
                 throw new EntityNotFoundException(entityType);
             }
 
-            // TODO: handle cascade drops?
+            Drop(entityName, cascade);
+        }
+
+        public override void Drop(String entityName, bool cascade)
+        {
+            if (!m_entities.HasEntity(entityName)) throw new EntityNotFoundException(entityName);
+
             EntityInfo entity = m_entities[entityName];
 
             var connection = GetConnection(true);
@@ -1697,6 +1781,10 @@ namespace OpenNETCF.ORM
         /// <typeparam name="T"></typeparam>
         public override int Delete<T>(bool cascade)
         {
+            if (typeof(T).Equals(typeof(DynamicEntity)) || typeof(T).Equals(typeof(DynamicEntityInfo)))
+            {
+                throw new ArgumentException("DynamicEntities must be counted with one of the other Delete overloads.");
+            }
             return Delete(typeof(T), null, cascade);
         }
 
@@ -1706,19 +1794,32 @@ namespace OpenNETCF.ORM
         /// <typeparam name="T"></typeparam>
         public override int Delete(System.Type entityType, bool cascade)
         {
+            if (entityType.Equals(typeof(DynamicEntity)) || entityType.Equals(typeof(DynamicEntityInfo)))
+            {
+                throw new ArgumentException("DynamicEntities must be counted with one of the other Delete overloads.");
+            }
             return Delete(entityType, null, cascade);
         }
 
 
         public override int Delete<T>(IEnumerable<FilterCondition> filters, bool cascade)
         {
+            if (typeof(T).Equals(typeof(DynamicEntity)) || typeof(T).Equals(typeof(DynamicEntityInfo)))
+            {
+                throw new ArgumentException("DynamicEntities must be counted with one of the other Delete overloads.");
+            }
             return Delete(typeof(T), filters, cascade);
         }
 
         public override int Delete(System.Type entityType, IEnumerable<FilterCondition> filters, bool cascade)
         {
-            int result = 0;
+            if (entityType.Equals(typeof(DynamicEntity)) || entityType.Equals(typeof(DynamicEntityInfo)))
+            {
+                throw new ArgumentException("DynamicEntities must be deleted with one of the other Delete overloads.");
+            }
             var entityName = m_entities.GetNameForType(entityType);
+
+            int result = 0;
             IDbConnection connection = GetConnection(true);
             IDbTransaction transaction = null;
             try
@@ -1855,11 +1956,20 @@ namespace OpenNETCF.ORM
         public override int Delete(object item, bool cascade)
         {
             int result = 0;
-            var type = item.GetType();
-            string entityName = m_entities.GetNameForType(type);
+            var isDynamicEntity = item is DynamicEntity;
+            string entityName = null;
+            if (isDynamicEntity)
+            {
+                entityName = ((DynamicEntity)item).EntityName;
+                if (!m_entities.HasEntity(entityName)) throw new EntityNotFoundException(entityName);
+            }
+            else
+            {
+                entityName = m_entities.GetNameForType(item.GetType());
+            }
             if (entityName == null)
             {
-                throw new EntityNotFoundException(type);
+                throw new EntityNotFoundException(item.GetType());
             }
             var entity = m_entities[entityName];
 
@@ -2002,6 +2112,11 @@ namespace OpenNETCF.ORM
 
         public override int Delete(Type entityType, object primaryKey, bool cascade)
         {
+            if (entityType.Equals(typeof(DynamicEntity)) || entityType.Equals(typeof(DynamicEntityInfo)))
+            {
+                throw new ArgumentException("DynamicEntities must be deleted with one of the other Delete overloads.");
+            }
+
             int result = 0;
             string entityName = m_entities.GetNameForType(entityType);
 
@@ -2061,19 +2176,50 @@ namespace OpenNETCF.ORM
             return result;
         }
 
-        /// <summary>
-        /// Returns the number of instances of the given type in the DataStore
-        /// </summary>
-        /// <typeparam name="T">Entity type to count</typeparam>
-        /// <returns>The number of instances in the store</returns>
+
         public override int Count<T>()
         {
-            var t = typeof(T);
-            return Count(t);
+            if (typeof(T).Equals(typeof(DynamicEntity)) || typeof(T).Equals(typeof(DynamicEntityInfo)))
+            {
+                throw new ArgumentException("DynamicEntities must be counted with one of the other Count overloads.");
+            }
+            var entityName = m_entities.GetNameForType(typeof(T));
+            if (entityName == null) throw new EntityNotFoundException(typeof(T));
+            return Count(entityName, null);
+        }
+
+        public override int Count<T>(IEnumerable<FilterCondition> filters)
+        {
+            if (typeof(T).Equals(typeof(DynamicEntity)) || typeof(T).Equals(typeof(DynamicEntityInfo)))
+            {
+                throw new ArgumentException("DynamicEntities must be counted with one of the other Count overloads.");
+            }
+            var entityName = m_entities.GetNameForType(typeof(T));
+            if (entityName == null) throw new EntityNotFoundException(typeof(T));
+            return Count(entityName, filters);
         }
 
         public override int Count(Type entityType)
         {
+            if (entityType.Equals(typeof(DynamicEntity)) || entityType.Equals(typeof(DynamicEntityInfo)))
+            {
+                throw new ArgumentException("DynamicEntities must be counted with one of the other Count overloads.");
+            }
+            string entityName = m_entities.GetNameForType(entityType);
+            if (entityName == null)
+            {
+                throw new EntityNotFoundException(entityType);
+            }
+
+            return Count(entityName, null);
+        }
+
+        public override int Count(Type entityType, IEnumerable<FilterCondition> filters)
+        {
+            if (entityType.Equals(typeof(DynamicEntity)) || entityType.Equals(typeof(DynamicEntityInfo)))
+            {
+                throw new ArgumentException("DynamicEntities must be counted with one of the other Count overloads.");
+            }
             string entityName = m_entities.GetNameForType(entityType);
 
             if (entityName == null)
@@ -2081,16 +2227,53 @@ namespace OpenNETCF.ORM
                 throw new EntityNotFoundException(entityType);
             }
 
+            return Count(entityName, null);
+        }
+
+        public override int Count(String entityName)
+        {
+            return Count(entityName, null);
+        }
+
+        public override int Count(String entityName, IEnumerable<FilterCondition> filters)
+        {
             var connection = GetConnection(true);
             try
             {
                 string field = "*";
                 if (Entities[entityName].Fields.KeyFields.Count == 1)
                     field = Entities[entityName].Fields.KeyFields[0].FieldName;
+                var @params = new List<IDataParameter>(); 
                 using (var command = GetNewCommandObject())
                 {
+                    var sb = new StringBuilder();
                     command.Connection = connection;
-                    command.CommandText = string.Format("SELECT COUNT({0}) FROM {1}", field, entityName);
+                    sb.AppendFormat("SELECT COUNT({0}) FROM {1} ", field, entityName);
+                    if (filters != null)
+                    {
+                        for (int i = 0; i < filters.Count(); i++)
+                        {
+                            sb.Append(i == 0 ? " WHERE " : String.Format(" {0} ", FieldAttribute.GetName(typeof(FilterCondition.LogicalOperator), (int)filters.ElementAt(i).WhereOperator)));
+
+                            var filter = filters.ElementAt(i);
+
+                            string paramName = string.Format("@p{0}", i);
+
+                            string paramsql = BuildParameterSQL(paramName, filter);
+                            sb.Append(paramsql);
+                            // In the case of a IS NULL or so, we don't use the Param, no need to add it.
+                            if (paramsql.Contains(paramName))
+                            {
+                                var param = CreateParameterObject(paramName, filter.Value ?? DBNull.Value);
+                                @params.Add(param);
+                            }
+                        }
+                    }
+                    command.CommandText = sb.ToString();
+                    foreach (var param in @params)
+                    {
+                        command.Parameters.Add(param); 
+                    }
                     var count = command.ExecuteScalar();
                     return Convert.ToInt32(count);
                 }
@@ -2111,7 +2294,11 @@ namespace OpenNETCF.ORM
         /// <returns></returns>
         public override T[] Fetch<T>(int fetchCount, int firstRowOffset, string sortField)
         {
-            return Fetch<T>(fetchCount, firstRowOffset, sortField, FieldSearchOrder.Ascending, null, false);
+            if (typeof(T).Equals(typeof(DynamicEntity)) || typeof(T).Equals(typeof(DynamicEntityInfo)))
+            {
+                throw new ArgumentException("DynamicEntities must be counted with one of the other Count overloads.");
+            }
+            return Fetch<T>(fetchCount, firstRowOffset, sortField, FieldOrder.Ascending, null, false);
         }
 
         /// <summary>
@@ -2122,6 +2309,10 @@ namespace OpenNETCF.ORM
         /// <returns></returns>
         public override T[] Fetch<T>(int fetchCount)
         {
+            if (typeof(T).Equals(typeof(DynamicEntity)) || typeof(T).Equals(typeof(DynamicEntityInfo)))
+            {
+                throw new ArgumentException("DynamicEntities must be counted with one of the other Count overloads.");
+            }
             var type = typeof(T);
             var items = Select(type.ToString(), null, null, fetchCount, 0, false, false, null);
             return items.Cast<T>().ToArray();
@@ -2136,28 +2327,48 @@ namespace OpenNETCF.ORM
         /// <returns></returns>
         public override T[] Fetch<T>(int fetchCount, int firstRowOffset)
         {
+            if (typeof(T).Equals(typeof(DynamicEntity)) || typeof(T).Equals(typeof(DynamicEntityInfo)))
+            {
+                throw new ArgumentException("DynamicEntities must be counted with one of the other Count overloads.");
+            }
             var type = typeof(T);
             var items = Select(type.ToString(), null, null, fetchCount, firstRowOffset, false, false, null);
             return items.Cast<T>().ToArray();
         }
 
-        public override T[] Fetch<T>(int fetchCount, int firstRowOffset, string sortField, FieldSearchOrder sortOrder, FilterCondition filter, bool fillReferences)
+        public override T[] Fetch<T>(int fetchCount, int firstRowOffset, string sortField, FieldOrder sortOrder, FilterCondition filter, bool fillReferences)
         {
+            if (typeof(T).Equals(typeof(DynamicEntity)) || typeof(T).Equals(typeof(DynamicEntityInfo)))
+            {
+                throw new ArgumentException("DynamicEntities must be counted with one of the other Count overloads.");
+            }
             return Fetch<T>(fetchCount, firstRowOffset, sortField, sortOrder, filter, fillReferences, false);
         }
-        public override T[] Fetch<T>(int fetchCount, int firstRowOffset, string sortField, FieldSearchOrder sortOrder, FilterCondition filter, bool fillReferences, bool filterReferences)
+        public override T[] Fetch<T>(int fetchCount, int firstRowOffset, string sortField, FieldOrder sortOrder, FilterCondition filter, bool fillReferences, bool filterReferences)
         {
+            if (typeof(T).Equals(typeof(DynamicEntity)) || typeof(T).Equals(typeof(DynamicEntityInfo)))
+            {
+                throw new ArgumentException("DynamicEntities must be counted with one of the other Count overloads.");
+            }
             return (T[])Fetch(typeof(T), fetchCount, firstRowOffset, sortField, sortOrder, filter, fillReferences, filterReferences).Cast<T>();
         }
 
         public override object[] Fetch(Type entityType, int fetchCount, int firstRowOffset, bool fillReferences)
         {
+            if (entityType.Equals(typeof(DynamicEntity)) || entityType.Equals(typeof(DynamicEntityInfo)))
+            {
+                throw new ArgumentException("DynamicEntities must be counted with one of the other Count overloads.");
+            }
             return Select(entityType.ToString(), null, null, fetchCount, firstRowOffset, fillReferences, false, null);
         }
         public override object[] Fetch(Type entityType, int fetchCount, int firstRowOffset, bool fillReferences, bool filterReferences)
         {
+            if (entityType.Equals(typeof(DynamicEntity)) || entityType.Equals(typeof(DynamicEntityInfo)))
+            {
+                throw new ArgumentException("DynamicEntities must be counted with one of the other Count overloads.");
+            }
             return Select(entityType.ToString(), null, null, fetchCount, firstRowOffset, fillReferences, filterReferences, null);
         }
-        public abstract override object[] Fetch(Type entityType, int fetchCount, int firstRowOffset, string sortField, FieldSearchOrder sortOrder, FilterCondition filter, bool fillReferences, bool filterReferences);
+        public abstract override object[] Fetch(Type entityType, int fetchCount, int firstRowOffset, string sortField, FieldOrder sortOrder, FilterCondition filter, bool fillReferences, bool filterReferences);
     }
 }
