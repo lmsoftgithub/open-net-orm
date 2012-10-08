@@ -19,14 +19,23 @@ namespace OpenNETCF.ORM
 
     public class EntityTypeChangedArgs : EventArgs
     {
+        internal EntityTypeChangedArgs(EntityInfo info, ReferenceAttribute reference)
+        {
+            EntityInfo = info;
+            ReferenceAttribute = reference;
+            FieldAttribute = null;
+            TableCreated = false;
+        }
         internal EntityTypeChangedArgs(EntityInfo info, FieldAttribute field)
         {
             EntityInfo = info;
+            ReferenceAttribute = null;
             FieldAttribute = field;
             TableCreated = false;
         }
         public EntityInfo EntityInfo { get; internal set; }
         public FieldAttribute FieldAttribute { get; internal set; }
+        public ReferenceAttribute ReferenceAttribute { get; internal set; }
         public bool TableCreated { get; internal set; }
     }
 

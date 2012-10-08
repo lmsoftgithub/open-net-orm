@@ -327,31 +327,6 @@ namespace OpenNETCF.ORM
             throw new NotImplementedException();
         }
 
-        public override int Count<T>(IEnumerable<FilterCondition> filters)
-        {
-            var t = typeof(T);
-            string entityName = m_entities.GetNameForType(t);
-
-            if (entityName == null)
-            {
-                throw new EntityNotFoundException(t);
-            }
-
-            var connection = GetConnection(true);
-            try
-            {
-                using (var command = BuildFilterCommand<SQLiteCommand, SQLiteParameter>(entityName, filters, true, 0, 0))
-                {
-                    command.Connection = connection as SQLiteConnection;
-                    return (int)command.ExecuteScalar();
-                }
-            }
-            finally
-            {
-                DoneWithConnection(connection, true);
-            }
-        }
-
         protected override Boolean FieldExists(IDbConnection connection, EntityInfo entity, FieldAttribute field)
         {
             Boolean exists = false;
@@ -429,7 +404,7 @@ namespace OpenNETCF.ORM
             return exists;
         }
 
-        protected override string VerifyIndex(string entityName, string fieldName, FieldSearchOrder searchOrder, IDbConnection connection)
+        protected override string VerifyIndex(string entityName, string fieldName, FieldOrder searchOrder, IDbConnection connection)
         {
             bool localConnection = false;
             if (connection == null)
@@ -440,7 +415,7 @@ namespace OpenNETCF.ORM
             try
             {
                 var indexName = string.Format("ORM_IDX_{0}_{1}_{2}", entityName, fieldName,
-                    searchOrder == FieldSearchOrder.Descending ? "DESC" : "ASC");
+                    searchOrder == FieldOrder.Descending ? "DESC" : "ASC");
 
                 if (m_indexNameCache.FirstOrDefault(ii => ii.Name == indexName) != null) return indexName;
 
@@ -459,7 +434,7 @@ namespace OpenNETCF.ORM
                             indexName,
                             entityName,
                             fieldName,
-                            searchOrder == FieldSearchOrder.Descending ? "DESC" : string.Empty);
+                            searchOrder == FieldOrder.Descending ? "DESC" : string.Empty);
 
                         Debug.WriteLine(sql);
 

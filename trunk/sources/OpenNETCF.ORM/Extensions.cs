@@ -175,13 +175,13 @@ namespace OpenNETCF.ORM
                 case DbType.UInt16:
                     return "smallint";
                 case DbType.String:
-                    return "varchar";
-                case DbType.StringFixedLength:
-                    return "char";
-                case DbType.AnsiString:
                     return "nvarchar";
-                case DbType.AnsiStringFixedLength:
+                case DbType.StringFixedLength:
                     return "nchar";
+                case DbType.AnsiString:
+                    return "varchar";
+                case DbType.AnsiStringFixedLength:
+                    return "char";
                 case DbType.Boolean:
                     return "bit";
                 case DbType.Object:

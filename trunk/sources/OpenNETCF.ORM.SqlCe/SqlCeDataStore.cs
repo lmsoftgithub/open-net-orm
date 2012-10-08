@@ -144,31 +144,6 @@ namespace OpenNETCF.ORM
             }
         }
 
-        public override int Count<T>(IEnumerable<FilterCondition> filters)
-        {
-            var t = typeof(T);
-            string entityName = m_entities.GetNameForType(t);
-
-            if (entityName == null)
-            {
-                throw new EntityNotFoundException(t);
-            }
-
-            var connection = GetConnection(true);
-            try
-            {
-                using (var command = BuildFilterCommand<SqlCeCommand, SqlCeParameter>(entityName, filters, true, 0, 0))
-                {
-                    command.Connection = connection as SqlCeConnection;
-                    return (int)command.ExecuteScalar();
-                }
-            }
-            finally
-            {
-                DoneWithConnection(connection, true);
-            }
-        }
-
         protected override IDataParameter CreateParameterObject(string parameterName, object parameterValue)
         {
             return new SqlCeParameter(parameterName, parameterValue);
@@ -210,6 +185,19 @@ namespace OpenNETCF.ORM
             {
                 DoneWithConnection(connection, true);
             }
+        }
+
+        protected override string GetFieldDataTypeString(string entityName, FieldAttribute field)
+        {
+            // SqlCe doesn't support varchar or char. Only the N variants.
+            switch (field.DataType)
+            {
+                case DbType.AnsiString:
+                    return "nvarchar";
+                case DbType.AnsiStringFixedLength:
+                    return "nchar";
+            }
+            return base.GetFieldDataTypeString(entityName, field);
         }
 
         public int MaxDatabaseSizeInMB 

@@ -14,12 +14,12 @@ namespace OpenNETCF.ORM
 {
     public partial class FirebirdDataStore
     {
-        public override object[] Fetch(Type entityType, int fetchCount, int firstRowOffset, string sortField, FieldSearchOrder sortOrder, FilterCondition filter, bool fillReferences, bool filterReferences)
+        public override object[] Fetch(Type entityType, int fetchCount, int firstRowOffset, string sortField, FieldOrder sortOrder, FilterCondition filter, bool fillReferences, bool filterReferences)
         {
             throw new NotImplementedException();
         }
 
-        public override T[] Fetch<T>(int fetchCount, int firstRowOffset, string sortField, FieldSearchOrder sortOrder, FilterCondition filter, bool fillReferences, bool filterReferences)
+        public override T[] Fetch<T>(int fetchCount, int firstRowOffset, string sortField, FieldOrder sortOrder, FilterCondition filter, bool fillReferences, bool filterReferences)
         {
             var type = typeof(T);
             string entityName = m_entities.GetNameForType(type);
@@ -36,7 +36,7 @@ namespace OpenNETCF.ORM
                         string.Format("Sort Field '{0}' not found in Entity '{1}'", sortField, entityName));
                 }
 
-                if (sortOrder == FieldSearchOrder.NotSearchable)
+                if (sortOrder == FieldOrder.None)
                 {
                     throw new System.ArgumentException("You must select a valid sort order if providing a sort field.");
                 }

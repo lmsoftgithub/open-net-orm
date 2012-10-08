@@ -46,6 +46,7 @@ namespace OpenNETCF.ORM.MainDemo.Common
             this.pgrItemEditor.PropertyValueChanged += new PropertyValueChangedEventHandler(pgrItemEditor_PropertyValueChanged);
             this._messages = new System.ComponentModel.BindingList<string>();
             this._unsavedItems = new List<object>();
+            this.cmbComparison.DataSource = Enum.GetNames(typeof(FilterCondition.FilterOperator));
         }
 
         public void RefreshUI()
@@ -65,7 +66,6 @@ namespace OpenNETCF.ORM.MainDemo.Common
                         
                         this.cmbTable.DisplayMember = "EntityName";
                         this.cmbTable.DataSource = this._entities;
-                        this.cmbComparison.DataSource = Enum.GetNames(typeof(FilterCondition.FilterOperator));
                     }
                     else
                     {
@@ -157,10 +157,6 @@ namespace OpenNETCF.ORM.MainDemo.Common
                         DateTime start = DateTime.Now;
                         System.Collections.IList list = (System.Collections.IList)this._DataStore.Select(entity.EntityType, this.chkFillReferences.Checked, this.chkFilterReferences.Checked).ToList();
                         AddMessage(String.Format("Executed in {0}ms (Results:{1})", DateTime.Now.Subtract(start).TotalMilliseconds, list.Count));
-                        var bl = new System.ComponentModel.BindingList<Model.hierarchy3a>();
-                        var blt = bl.GetType();
-                        var ctors = blt.GetConstructors();
-                        var lt = list.GetType();
                         var listType = typeof(System.ComponentModel.BindingList<>).MakeGenericType(entity.EntityType);
                         IBindingList bindList = (System.ComponentModel.IBindingList)Activator.CreateInstance(listType);
                         this.dgvResultSet.DataSource = bindList;
@@ -516,6 +512,34 @@ namespace OpenNETCF.ORM.MainDemo.Common
                     {
                         list.Remove(this.pgrItemEditor.SelectedObject);
                     }
+                }
+            }
+            catch (Exception ex)
+            {
+                OpenNETCF.ORM.MainDemo.Logger.LogException(System.Reflection.MethodBase.GetCurrentMethod().Name, ex);
+            }
+        }
+
+        private void btnCount_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (this.cmbTable.SelectedItem != null)
+                {
+                    CleanUISelect();
+                    EntityInfo entity = this.cmbTable.SelectedItem as EntityInfo;
+                    FieldAttribute field = this.cmbFields.SelectedItem as FieldAttribute;
+                    List<FilterCondition> filters = null;
+                    if (field != null && this.txtFilterValue.Text.Length > 0)
+                    {
+                        filters = new List<FilterCondition>();
+                        filters.Add(new FilterCondition(field.FieldName, GetValue(this.txtFilterValue.Text), (FilterCondition.FilterOperator)Enum.Parse(typeof(FilterCondition.FilterOperator), this.cmbComparison.SelectedItem.ToString())));
+                    }
+                    var list = new BindingList<int>();
+                    DateTime start = DateTime.Now;
+                    list.Add(this._DataStore.Count(entity.EntityType, filters));
+                    AddMessage(String.Format("Executed in {0}ms", DateTime.Now.Subtract(start).TotalMilliseconds));
+                    dgvResultSet.DataSource = list;
                 }
             }
             catch (Exception ex)

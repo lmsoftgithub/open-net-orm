@@ -14,7 +14,7 @@ namespace OpenNETCF.ORM.Model
         [Field(IsPrimaryKey = true, DataType = System.Data.DbType.Int64)]
         public Int64 pid { get; set; }
 
-        [Field(DataType = System.Data.DbType.Int32, SearchOrder=FieldSearchOrder.Ascending)]
+        [Field(DataType = System.Data.DbType.Int32, SearchOrder=FieldOrder.Ascending)]
         public Int32 numfield { get; set; }
 
         // The ConditionField will filter all child elements which have their "boolfield" column value set to true.

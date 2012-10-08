@@ -30,13 +30,13 @@ namespace OpenNETCF.ORM.Model
         [Field(DataType = System.Data.DbType.Guid)]
         public Guid uid { get; set; }
 
-        [Field(DataType = System.Data.DbType.Int32, SortOrder=FieldSearchOrder.Descending)]
+        [Field(DataType = System.Data.DbType.Int32, SortOrder=FieldOrder.Descending)]
         public Int32 numfield1 { get; set; }
 
-        [Field(DataType = System.Data.DbType.Int32, SortOrder = FieldSearchOrder.Descending)]
+        [Field(DataType = System.Data.DbType.Int32, SortOrder = FieldOrder.Descending)]
         public Int32 numfield2 { get; set; }
 
-        [Field(DataType = System.Data.DbType.Int32, SortOrder = FieldSearchOrder.Descending)]
+        [Field(DataType = System.Data.DbType.Int32, SortOrder = FieldOrder.Descending)]
         public Int32 numfield3 { get; set; }
 
         public hierarchy3a()

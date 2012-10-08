@@ -29,6 +29,7 @@
         private void InitializeComponent()
         {
             this.grpDBTests = new System.Windows.Forms.GroupBox();
+            this.chkLimitResults = new System.Windows.Forms.CheckBox();
             this.btnRefresh = new System.Windows.Forms.Button();
             this.pnlModified = new System.Windows.Forms.Panel();
             this.btnReport = new System.Windows.Forms.Button();
@@ -66,7 +67,7 @@
             this.cmbFields = new System.Windows.Forms.ComboBox();
             this.dgvResultSet = new System.Windows.Forms.DataGridView();
             this.cmbTable = new System.Windows.Forms.ComboBox();
-            this.chkLimitResults = new System.Windows.Forms.CheckBox();
+            this.btnCount = new System.Windows.Forms.Button();
             this.grpDBTests.SuspendLayout();
             this.grpTableActions.SuspendLayout();
             this.grpItemActions.SuspendLayout();
@@ -104,6 +105,18 @@
             this.grpDBTests.TabIndex = 0;
             this.grpDBTests.TabStop = false;
             this.grpDBTests.Text = "Database Tests";
+            // 
+            // chkLimitResults
+            // 
+            this.chkLimitResults.AutoSize = true;
+            this.chkLimitResults.Checked = true;
+            this.chkLimitResults.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.chkLimitResults.Location = new System.Drawing.Point(9, 250);
+            this.chkLimitResults.Name = "chkLimitResults";
+            this.chkLimitResults.Size = new System.Drawing.Size(213, 21);
+            this.chkLimitResults.TabIndex = 33;
+            this.chkLimitResults.Text = "Max 10.000 displayed results";
+            this.chkLimitResults.UseVisualStyleBackColor = true;
             // 
             // btnRefresh
             // 
@@ -157,6 +170,7 @@
             // 
             // grpTableActions
             // 
+            this.grpTableActions.Controls.Add(this.btnCount);
             this.grpTableActions.Controls.Add(this.chkTransactional);
             this.grpTableActions.Controls.Add(this.chkFillReferences);
             this.grpTableActions.Controls.Add(this.chkFilterReferences);
@@ -478,17 +492,15 @@
             this.cmbTable.Size = new System.Drawing.Size(261, 24);
             this.cmbTable.TabIndex = 0;
             // 
-            // chkLimitResults
+            // btnCount
             // 
-            this.chkLimitResults.AutoSize = true;
-            this.chkLimitResults.Checked = true;
-            this.chkLimitResults.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.chkLimitResults.Location = new System.Drawing.Point(9, 250);
-            this.chkLimitResults.Name = "chkLimitResults";
-            this.chkLimitResults.Size = new System.Drawing.Size(213, 21);
-            this.chkLimitResults.TabIndex = 33;
-            this.chkLimitResults.Text = "Max 10.000 displayed results";
-            this.chkLimitResults.UseVisualStyleBackColor = true;
+            this.btnCount.Location = new System.Drawing.Point(354, 23);
+            this.btnCount.Name = "btnCount";
+            this.btnCount.Size = new System.Drawing.Size(54, 23);
+            this.btnCount.TabIndex = 34;
+            this.btnCount.Text = "Count";
+            this.btnCount.UseVisualStyleBackColor = true;
+            this.btnCount.Click += new System.EventHandler(this.btnCount_Click);
             // 
             // DatabaseTests
             // 
@@ -550,5 +562,6 @@
         private System.Windows.Forms.CheckBox chkTransactional;
         private System.Windows.Forms.Button btnRefresh;
         private System.Windows.Forms.CheckBox chkLimitResults;
+        private System.Windows.Forms.Button btnCount;
     }
 }

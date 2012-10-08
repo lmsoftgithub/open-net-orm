@@ -37,7 +37,9 @@ namespace OpenNETCF.ORM.MainDemo.SqlCe
                     this._DataStore.DiscoverTypes(System.Reflection.Assembly.GetAssembly(typeof(OpenNETCF.ORM.Model.basictable)));
                     this.dbsStructure.DataStore = this._DataStore;
                     this.dbtTests.DataStore = this._DataStore;
+                    this.deTests.DataStore = this._DataStore;
                     this.dbsStructure.DataStoreChanged += new EventHandler(dbsStructure_DataStoreChanged);
+                    this.deTests.DataStoreChanged += new EventHandler(deTests_DataStoreChanged);
                 }
             }
             catch (Exception ex)
@@ -47,9 +49,16 @@ namespace OpenNETCF.ORM.MainDemo.SqlCe
             }
         }
 
+        void deTests_DataStoreChanged(object sender, EventArgs e)
+        {
+            this.dbtTests.RefreshUI();
+            this.dbsStructure.RefreshUI();
+        }
+
         void dbsStructure_DataStoreChanged(object sender, EventArgs e)
         {
             this.dbtTests.RefreshUI();
+            this.deTests.RefreshUI();
         }
 
         private void btnCreateDataStore_Click(object sender, EventArgs e)

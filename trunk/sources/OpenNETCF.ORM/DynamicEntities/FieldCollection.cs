@@ -25,25 +25,25 @@ namespace OpenNETCF.ORM
             {
                 lock (m_fields)
                 {
-                    if (!m_fields.ContainsKey(fieldName))
+                    if (!m_fields.ContainsKey(fieldName.ToLower()))
                     {
                         return null;
                         throw new ArgumentException(string.Format("Field named '{0}' not present", fieldName));
                     }
-                    return m_fields[fieldName].Value;
+                    return m_fields[fieldName.ToLower()].Value;
                 }
             }
             set
             {
                 lock (m_fields)
                 {
-                    if (!m_fields.ContainsKey(fieldName))
+                    if (!m_fields.ContainsKey(fieldName.ToLower()))
                     {
-                        m_fields.Add(fieldName, new FieldValue(fieldName, value));
+                        m_fields.Add(fieldName.ToLower(), new FieldValue(fieldName, value));
                     }
                     else
                     {
-                        m_fields[fieldName] = new FieldValue(fieldName, value);
+                        m_fields[fieldName.ToLower()].Value = value;
                     }
                 }
             }
@@ -62,14 +62,14 @@ namespace OpenNETCF.ORM
 
         internal void Add(FieldAttribute field)
         {
-            Add(field.FieldName, null);
+            Add(field.FieldName, null, null);
         }
 
         internal void Add(string fieldName, Type fieldType, object value)
         {
             lock (m_fields)
             {
-                m_fields.Add(fieldName, new FieldValue(fieldName, value));
+                m_fields.Add(fieldName.ToLower(), new FieldValue(fieldName, fieldType, value));
             }
         }
 
@@ -81,6 +81,16 @@ namespace OpenNETCF.ORM
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
         {
             return GetEnumerator();
+        }
+
+        public Type GetFieldType(string fieldName)
+        {
+            return m_fields[fieldName].ValueType;
+        }
+
+        public bool ContainsKey(string key)
+        {
+            return m_fields.ContainsKey(key.ToLower());
         }
     }
 }

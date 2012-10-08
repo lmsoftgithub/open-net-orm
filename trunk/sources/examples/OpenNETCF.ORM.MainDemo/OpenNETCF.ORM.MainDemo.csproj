@@ -89,6 +89,7 @@
     <Compile Include="Common\DynamicEntityTests.Designer.cs">
       <DependentUpon>DynamicEntityTests.cs</DependentUpon>
     </Compile>
+    <Compile Include="DictionaryPropertyGridAdapter.cs" />
     <Compile Include="FireBird\frmMainFirebird.cs">
       <SubType>Form</SubType>
     </Compile>

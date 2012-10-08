@@ -29,8 +29,35 @@
         private void InitializeComponent()
         {
             this.grpDynamicEntity = new System.Windows.Forms.GroupBox();
+            this.btnReport = new System.Windows.Forms.Button();
+            this.lblMessage = new System.Windows.Forms.Label();
+            this.btnReverseEngineering = new System.Windows.Forms.Button();
+            this.btnRegister = new System.Windows.Forms.Button();
             this.grpTests = new System.Windows.Forms.GroupBox();
-            this.propertyGrid1 = new System.Windows.Forms.PropertyGrid();
+            this.pnlModified = new System.Windows.Forms.Panel();
+            this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.btnDeleteFiltered = new System.Windows.Forms.Button();
+            this.btnBulkInsertOrUpdate = new System.Windows.Forms.Button();
+            this.btnBulkInsert = new System.Windows.Forms.Button();
+            this.btnDropAndCreate = new System.Windows.Forms.Button();
+            this.btnCount = new System.Windows.Forms.Button();
+            this.btnNew = new System.Windows.Forms.Button();
+            this.btnSelectFilter = new System.Windows.Forms.Button();
+            this.btnSelectAll = new System.Windows.Forms.Button();
+            this.grpItemActions = new System.Windows.Forms.GroupBox();
+            this.chkCascadeItemActions = new System.Windows.Forms.CheckBox();
+            this.btnUpdate = new System.Windows.Forms.Button();
+            this.btnInsertOrUpdate = new System.Windows.Forms.Button();
+            this.btnInsert = new System.Windows.Forms.Button();
+            this.btnDelete = new System.Windows.Forms.Button();
+            this.chkLimitResults = new System.Windows.Forms.CheckBox();
+            this.grpFilter = new System.Windows.Forms.GroupBox();
+            this.label7 = new System.Windows.Forms.Label();
+            this.txtFilterValue = new System.Windows.Forms.TextBox();
+            this.label8 = new System.Windows.Forms.Label();
+            this.cmbComparison = new System.Windows.Forms.ComboBox();
+            this.cmbFields = new System.Windows.Forms.ComboBox();
+            this.pgrItemEditor = new System.Windows.Forms.PropertyGrid();
             this.dgvDynamicEntities = new System.Windows.Forms.DataGridView();
             this.grpNewEntity = new System.Windows.Forms.GroupBox();
             this.btnAddEntity = new System.Windows.Forms.Button();
@@ -50,71 +77,353 @@
             this.label2 = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
             this.cmbDynamicEntities = new System.Windows.Forms.ComboBox();
-            this.listFields = new System.Windows.Forms.ListBox();
-            this.btnSelectAll = new System.Windows.Forms.Button();
-            this.btnSelectFilter = new System.Windows.Forms.Button();
-            this.btnNew = new System.Windows.Forms.Button();
-            this.grpFilter = new System.Windows.Forms.GroupBox();
-            this.label7 = new System.Windows.Forms.Label();
-            this.txtFilterValue = new System.Windows.Forms.TextBox();
-            this.label8 = new System.Windows.Forms.Label();
-            this.cmbComparison = new System.Windows.Forms.ComboBox();
-            this.cmbFields = new System.Windows.Forms.ComboBox();
-            this.chkLimitResults = new System.Windows.Forms.CheckBox();
-            this.btnDelete = new System.Windows.Forms.Button();
+            this.lstFields = new System.Windows.Forms.ListBox();
+            this.chkTransactional = new System.Windows.Forms.CheckBox();
             this.grpDynamicEntity.SuspendLayout();
             this.grpTests.SuspendLayout();
+            this.groupBox1.SuspendLayout();
+            this.grpItemActions.SuspendLayout();
+            this.grpFilter.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvDynamicEntities)).BeginInit();
             this.grpNewEntity.SuspendLayout();
             this.grpNewField.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numFieldLength)).BeginInit();
-            this.grpFilter.SuspendLayout();
             this.SuspendLayout();
             // 
             // grpDynamicEntity
             // 
+            this.grpDynamicEntity.Controls.Add(this.btnReport);
+            this.grpDynamicEntity.Controls.Add(this.lblMessage);
+            this.grpDynamicEntity.Controls.Add(this.btnReverseEngineering);
+            this.grpDynamicEntity.Controls.Add(this.btnRegister);
             this.grpDynamicEntity.Controls.Add(this.grpTests);
             this.grpDynamicEntity.Controls.Add(this.grpNewEntity);
             this.grpDynamicEntity.Controls.Add(this.grpNewField);
             this.grpDynamicEntity.Controls.Add(this.label2);
             this.grpDynamicEntity.Controls.Add(this.label1);
             this.grpDynamicEntity.Controls.Add(this.cmbDynamicEntities);
-            this.grpDynamicEntity.Controls.Add(this.listFields);
+            this.grpDynamicEntity.Controls.Add(this.lstFields);
             this.grpDynamicEntity.Dock = System.Windows.Forms.DockStyle.Fill;
             this.grpDynamicEntity.Location = new System.Drawing.Point(0, 0);
             this.grpDynamicEntity.Name = "grpDynamicEntity";
-            this.grpDynamicEntity.Size = new System.Drawing.Size(930, 414);
+            this.grpDynamicEntity.Size = new System.Drawing.Size(826, 535);
             this.grpDynamicEntity.TabIndex = 0;
             this.grpDynamicEntity.TabStop = false;
             this.grpDynamicEntity.Text = "Dynamic Entity Tests";
+            // 
+            // btnReport
+            // 
+            this.btnReport.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnReport.Location = new System.Drawing.Point(793, 506);
+            this.btnReport.Name = "btnReport";
+            this.btnReport.Size = new System.Drawing.Size(23, 23);
+            this.btnReport.TabIndex = 10;
+            this.btnReport.UseVisualStyleBackColor = true;
+            this.btnReport.Click += new System.EventHandler(this.btnReport_Click);
+            // 
+            // lblMessage
+            // 
+            this.lblMessage.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.lblMessage.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.lblMessage.Location = new System.Drawing.Point(5, 506);
+            this.lblMessage.Name = "lblMessage";
+            this.lblMessage.Size = new System.Drawing.Size(810, 23);
+            this.lblMessage.TabIndex = 9;
+            this.lblMessage.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // btnReverseEngineering
+            // 
+            this.btnReverseEngineering.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.btnReverseEngineering.Location = new System.Drawing.Point(6, 225);
+            this.btnReverseEngineering.Name = "btnReverseEngineering";
+            this.btnReverseEngineering.Size = new System.Drawing.Size(82, 23);
+            this.btnReverseEngineering.TabIndex = 8;
+            this.btnReverseEngineering.Text = "Reverse";
+            this.btnReverseEngineering.UseVisualStyleBackColor = true;
+            this.btnReverseEngineering.Click += new System.EventHandler(this.btnReverseEngineering_Click);
+            // 
+            // btnRegister
+            // 
+            this.btnRegister.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.btnRegister.Enabled = false;
+            this.btnRegister.Location = new System.Drawing.Point(125, 225);
+            this.btnRegister.Name = "btnRegister";
+            this.btnRegister.Size = new System.Drawing.Size(82, 23);
+            this.btnRegister.TabIndex = 7;
+            this.btnRegister.Text = "Register";
+            this.btnRegister.UseVisualStyleBackColor = true;
+            this.btnRegister.Click += new System.EventHandler(this.btnRegister_Click);
             // 
             // grpTests
             // 
             this.grpTests.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.grpTests.Controls.Add(this.btnDelete);
+            this.grpTests.Controls.Add(this.pnlModified);
+            this.grpTests.Controls.Add(this.groupBox1);
+            this.grpTests.Controls.Add(this.grpItemActions);
             this.grpTests.Controls.Add(this.chkLimitResults);
             this.grpTests.Controls.Add(this.grpFilter);
-            this.grpTests.Controls.Add(this.btnNew);
-            this.grpTests.Controls.Add(this.btnSelectFilter);
-            this.grpTests.Controls.Add(this.btnSelectAll);
-            this.grpTests.Controls.Add(this.propertyGrid1);
+            this.grpTests.Controls.Add(this.pgrItemEditor);
             this.grpTests.Controls.Add(this.dgvDynamicEntities);
             this.grpTests.Location = new System.Drawing.Point(213, 10);
             this.grpTests.Name = "grpTests";
-            this.grpTests.Size = new System.Drawing.Size(706, 395);
+            this.grpTests.Size = new System.Drawing.Size(602, 488);
             this.grpTests.TabIndex = 6;
             this.grpTests.TabStop = false;
             // 
-            // propertyGrid1
+            // pnlModified
             // 
-            this.propertyGrid1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.propertyGrid1.HelpVisible = false;
-            this.propertyGrid1.Location = new System.Drawing.Point(433, 11);
-            this.propertyGrid1.Name = "propertyGrid1";
-            this.propertyGrid1.Size = new System.Drawing.Size(267, 222);
-            this.propertyGrid1.TabIndex = 1;
+            this.pnlModified.BackColor = System.Drawing.Color.Red;
+            this.pnlModified.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
+            this.pnlModified.Location = new System.Drawing.Point(6, 312);
+            this.pnlModified.Name = "pnlModified";
+            this.pnlModified.Size = new System.Drawing.Size(21, 21);
+            this.pnlModified.TabIndex = 51;
+            this.pnlModified.Visible = false;
+            // 
+            // groupBox1
+            // 
+            this.groupBox1.Controls.Add(this.chkTransactional);
+            this.groupBox1.Controls.Add(this.btnDeleteFiltered);
+            this.groupBox1.Controls.Add(this.btnBulkInsertOrUpdate);
+            this.groupBox1.Controls.Add(this.btnBulkInsert);
+            this.groupBox1.Controls.Add(this.btnDropAndCreate);
+            this.groupBox1.Controls.Add(this.btnCount);
+            this.groupBox1.Controls.Add(this.btnNew);
+            this.groupBox1.Controls.Add(this.btnSelectFilter);
+            this.groupBox1.Controls.Add(this.btnSelectAll);
+            this.groupBox1.Location = new System.Drawing.Point(6, 192);
+            this.groupBox1.Name = "groupBox1";
+            this.groupBox1.Size = new System.Drawing.Size(363, 114);
+            this.groupBox1.TabIndex = 50;
+            this.groupBox1.TabStop = false;
+            this.groupBox1.Text = "groupBox1";
+            // 
+            // btnDeleteFiltered
+            // 
+            this.btnDeleteFiltered.Location = new System.Drawing.Point(6, 73);
+            this.btnDeleteFiltered.Name = "btnDeleteFiltered";
+            this.btnDeleteFiltered.Size = new System.Drawing.Size(108, 23);
+            this.btnDeleteFiltered.TabIndex = 59;
+            this.btnDeleteFiltered.Text = "Delete Filtered";
+            this.btnDeleteFiltered.UseVisualStyleBackColor = true;
+            this.btnDeleteFiltered.Click += new System.EventHandler(this.btnDeleteFiltered_Click);
+            // 
+            // btnBulkInsertOrUpdate
+            // 
+            this.btnBulkInsertOrUpdate.Location = new System.Drawing.Point(201, 47);
+            this.btnBulkInsertOrUpdate.Name = "btnBulkInsertOrUpdate";
+            this.btnBulkInsertOrUpdate.Size = new System.Drawing.Size(155, 23);
+            this.btnBulkInsertOrUpdate.TabIndex = 58;
+            this.btnBulkInsertOrUpdate.Text = "Bulk Insert or Update";
+            this.btnBulkInsertOrUpdate.UseVisualStyleBackColor = true;
+            this.btnBulkInsertOrUpdate.Click += new System.EventHandler(this.btnBulkInsertOrUpdate_Click);
+            // 
+            // btnBulkInsert
+            // 
+            this.btnBulkInsert.Location = new System.Drawing.Point(113, 47);
+            this.btnBulkInsert.Name = "btnBulkInsert";
+            this.btnBulkInsert.Size = new System.Drawing.Size(82, 23);
+            this.btnBulkInsert.TabIndex = 57;
+            this.btnBulkInsert.Text = "Bulk Insert";
+            this.btnBulkInsert.UseVisualStyleBackColor = true;
+            this.btnBulkInsert.Click += new System.EventHandler(this.btnBulkInsert_Click);
+            // 
+            // btnDropAndCreate
+            // 
+            this.btnDropAndCreate.Location = new System.Drawing.Point(6, 47);
+            this.btnDropAndCreate.Name = "btnDropAndCreate";
+            this.btnDropAndCreate.Size = new System.Drawing.Size(101, 23);
+            this.btnDropAndCreate.TabIndex = 56;
+            this.btnDropAndCreate.Text = "Drop/Create";
+            this.btnDropAndCreate.UseVisualStyleBackColor = true;
+            this.btnDropAndCreate.Click += new System.EventHandler(this.btnDropAndCreate_Click);
+            // 
+            // btnCount
+            // 
+            this.btnCount.Location = new System.Drawing.Point(256, 20);
+            this.btnCount.Name = "btnCount";
+            this.btnCount.Size = new System.Drawing.Size(57, 23);
+            this.btnCount.TabIndex = 55;
+            this.btnCount.Text = "Count";
+            this.btnCount.UseVisualStyleBackColor = true;
+            this.btnCount.Click += new System.EventHandler(this.btnCount_Click);
+            // 
+            // btnNew
+            // 
+            this.btnNew.Location = new System.Drawing.Point(201, 21);
+            this.btnNew.Name = "btnNew";
+            this.btnNew.Size = new System.Drawing.Size(49, 23);
+            this.btnNew.TabIndex = 54;
+            this.btnNew.Text = "New";
+            this.btnNew.UseVisualStyleBackColor = true;
+            this.btnNew.Click += new System.EventHandler(this.btnNew_Click);
+            // 
+            // btnSelectFilter
+            // 
+            this.btnSelectFilter.Location = new System.Drawing.Point(87, 21);
+            this.btnSelectFilter.Name = "btnSelectFilter";
+            this.btnSelectFilter.Size = new System.Drawing.Size(108, 23);
+            this.btnSelectFilter.TabIndex = 53;
+            this.btnSelectFilter.Text = "Select Filtered";
+            this.btnSelectFilter.UseVisualStyleBackColor = true;
+            this.btnSelectFilter.Click += new System.EventHandler(this.btnSelectFilter_Click);
+            // 
+            // btnSelectAll
+            // 
+            this.btnSelectAll.Location = new System.Drawing.Point(6, 21);
+            this.btnSelectAll.Name = "btnSelectAll";
+            this.btnSelectAll.Size = new System.Drawing.Size(75, 23);
+            this.btnSelectAll.TabIndex = 52;
+            this.btnSelectAll.Text = "Select All";
+            this.btnSelectAll.UseVisualStyleBackColor = true;
+            this.btnSelectAll.Click += new System.EventHandler(this.btnSelectAll_Click);
+            // 
+            // grpItemActions
+            // 
+            this.grpItemActions.Controls.Add(this.chkCascadeItemActions);
+            this.grpItemActions.Controls.Add(this.btnUpdate);
+            this.grpItemActions.Controls.Add(this.btnInsertOrUpdate);
+            this.grpItemActions.Controls.Add(this.btnInsert);
+            this.grpItemActions.Controls.Add(this.btnDelete);
+            this.grpItemActions.Location = new System.Drawing.Point(373, 192);
+            this.grpItemActions.Name = "grpItemActions";
+            this.grpItemActions.Size = new System.Drawing.Size(223, 114);
+            this.grpItemActions.TabIndex = 49;
+            this.grpItemActions.TabStop = false;
+            this.grpItemActions.Text = "Item Actions";
+            // 
+            // chkCascadeItemActions
+            // 
+            this.chkCascadeItemActions.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.chkCascadeItemActions.AutoSize = true;
+            this.chkCascadeItemActions.Location = new System.Drawing.Point(82, 87);
+            this.chkCascadeItemActions.Name = "chkCascadeItemActions";
+            this.chkCascadeItemActions.Size = new System.Drawing.Size(135, 21);
+            this.chkCascadeItemActions.TabIndex = 28;
+            this.chkCascadeItemActions.Text = "Cascade Actions";
+            this.chkCascadeItemActions.UseVisualStyleBackColor = true;
+            // 
+            // btnUpdate
+            // 
+            this.btnUpdate.Location = new System.Drawing.Point(88, 23);
+            this.btnUpdate.Name = "btnUpdate";
+            this.btnUpdate.Size = new System.Drawing.Size(75, 23);
+            this.btnUpdate.TabIndex = 27;
+            this.btnUpdate.Text = "Update";
+            this.btnUpdate.UseVisualStyleBackColor = true;
+            this.btnUpdate.Click += new System.EventHandler(this.btnUpdate_Click);
+            // 
+            // btnInsertOrUpdate
+            // 
+            this.btnInsertOrUpdate.Location = new System.Drawing.Point(7, 52);
+            this.btnInsertOrUpdate.Name = "btnInsertOrUpdate";
+            this.btnInsertOrUpdate.Size = new System.Drawing.Size(125, 23);
+            this.btnInsertOrUpdate.TabIndex = 26;
+            this.btnInsertOrUpdate.Text = "Insert Or Update";
+            this.btnInsertOrUpdate.UseVisualStyleBackColor = true;
+            this.btnInsertOrUpdate.Click += new System.EventHandler(this.btnInsertOrUpdate_Click);
+            // 
+            // btnInsert
+            // 
+            this.btnInsert.Location = new System.Drawing.Point(7, 23);
+            this.btnInsert.Name = "btnInsert";
+            this.btnInsert.Size = new System.Drawing.Size(75, 23);
+            this.btnInsert.TabIndex = 25;
+            this.btnInsert.Text = "Insert";
+            this.btnInsert.UseVisualStyleBackColor = true;
+            this.btnInsert.Click += new System.EventHandler(this.btnInsert_Click);
+            // 
+            // btnDelete
+            // 
+            this.btnDelete.Location = new System.Drawing.Point(138, 54);
+            this.btnDelete.Name = "btnDelete";
+            this.btnDelete.Size = new System.Drawing.Size(75, 23);
+            this.btnDelete.TabIndex = 24;
+            this.btnDelete.Text = "Delete";
+            this.btnDelete.UseVisualStyleBackColor = true;
+            this.btnDelete.Click += new System.EventHandler(this.btnDelete_Click);
+            // 
+            // chkLimitResults
+            // 
+            this.chkLimitResults.AutoSize = true;
+            this.chkLimitResults.Checked = true;
+            this.chkLimitResults.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.chkLimitResults.Location = new System.Drawing.Point(6, 165);
+            this.chkLimitResults.Name = "chkLimitResults";
+            this.chkLimitResults.Size = new System.Drawing.Size(213, 21);
+            this.chkLimitResults.TabIndex = 40;
+            this.chkLimitResults.Text = "Max 10.000 displayed results";
+            this.chkLimitResults.UseVisualStyleBackColor = true;
+            // 
+            // grpFilter
+            // 
+            this.grpFilter.Controls.Add(this.label7);
+            this.grpFilter.Controls.Add(this.txtFilterValue);
+            this.grpFilter.Controls.Add(this.label8);
+            this.grpFilter.Controls.Add(this.cmbComparison);
+            this.grpFilter.Controls.Add(this.cmbFields);
+            this.grpFilter.Location = new System.Drawing.Point(6, 11);
+            this.grpFilter.Name = "grpFilter";
+            this.grpFilter.Size = new System.Drawing.Size(285, 148);
+            this.grpFilter.TabIndex = 5;
+            this.grpFilter.TabStop = false;
+            this.grpFilter.Text = "Filter";
+            // 
+            // label7
+            // 
+            this.label7.AutoSize = true;
+            this.label7.Location = new System.Drawing.Point(13, 84);
+            this.label7.Name = "label7";
+            this.label7.Size = new System.Drawing.Size(44, 17);
+            this.label7.TabIndex = 38;
+            this.label7.Text = "Value";
+            // 
+            // txtFilterValue
+            // 
+            this.txtFilterValue.Location = new System.Drawing.Point(126, 81);
+            this.txtFilterValue.Name = "txtFilterValue";
+            this.txtFilterValue.Size = new System.Drawing.Size(149, 22);
+            this.txtFilterValue.TabIndex = 37;
+            // 
+            // label8
+            // 
+            this.label8.AutoSize = true;
+            this.label8.Location = new System.Drawing.Point(13, 54);
+            this.label8.Name = "label8";
+            this.label8.Size = new System.Drawing.Size(83, 17);
+            this.label8.TabIndex = 36;
+            this.label8.Text = "Comparison";
+            // 
+            // cmbComparison
+            // 
+            this.cmbComparison.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cmbComparison.FormattingEnabled = true;
+            this.cmbComparison.Location = new System.Drawing.Point(126, 51);
+            this.cmbComparison.Name = "cmbComparison";
+            this.cmbComparison.Size = new System.Drawing.Size(149, 24);
+            this.cmbComparison.TabIndex = 35;
+            // 
+            // cmbFields
+            // 
+            this.cmbFields.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cmbFields.FormattingEnabled = true;
+            this.cmbFields.Location = new System.Drawing.Point(13, 21);
+            this.cmbFields.Name = "cmbFields";
+            this.cmbFields.Size = new System.Drawing.Size(262, 24);
+            this.cmbFields.TabIndex = 34;
+            // 
+            // pgrItemEditor
+            // 
+            this.pgrItemEditor.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.pgrItemEditor.HelpVisible = false;
+            this.pgrItemEditor.Location = new System.Drawing.Point(297, 11);
+            this.pgrItemEditor.Name = "pgrItemEditor";
+            this.pgrItemEditor.Size = new System.Drawing.Size(299, 175);
+            this.pgrItemEditor.TabIndex = 1;
             // 
             // dgvDynamicEntities
             // 
@@ -124,11 +433,11 @@
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.dgvDynamicEntities.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.dgvDynamicEntities.Location = new System.Drawing.Point(6, 239);
+            this.dgvDynamicEntities.Location = new System.Drawing.Point(6, 312);
             this.dgvDynamicEntities.Name = "dgvDynamicEntities";
             this.dgvDynamicEntities.ReadOnly = true;
             this.dgvDynamicEntities.RowTemplate.Height = 24;
-            this.dgvDynamicEntities.Size = new System.Drawing.Size(694, 150);
+            this.dgvDynamicEntities.Size = new System.Drawing.Size(590, 170);
             this.dgvDynamicEntities.TabIndex = 0;
             // 
             // grpNewEntity
@@ -137,7 +446,7 @@
             this.grpNewEntity.Controls.Add(this.btnAddEntity);
             this.grpNewEntity.Controls.Add(this.txtEntityName);
             this.grpNewEntity.Controls.Add(this.label6);
-            this.grpNewEntity.Location = new System.Drawing.Point(6, 171);
+            this.grpNewEntity.Location = new System.Drawing.Point(6, 258);
             this.grpNewEntity.Name = "grpNewEntity";
             this.grpNewEntity.Size = new System.Drawing.Size(197, 76);
             this.grpNewEntity.TabIndex = 5;
@@ -153,6 +462,7 @@
             this.btnAddEntity.Text = "Create Entity";
             this.btnAddEntity.TextAlign = System.Drawing.ContentAlignment.TopCenter;
             this.btnAddEntity.UseVisualStyleBackColor = true;
+            this.btnAddEntity.Click += new System.EventHandler(this.btnAddEntity_Click);
             // 
             // txtEntityName
             // 
@@ -183,7 +493,7 @@
             this.grpNewField.Controls.Add(this.cmbFieldType);
             this.grpNewField.Controls.Add(this.label3);
             this.grpNewField.Controls.Add(this.txtFieldName);
-            this.grpNewField.Location = new System.Drawing.Point(3, 253);
+            this.grpNewField.Location = new System.Drawing.Point(3, 340);
             this.grpNewField.Name = "grpNewField";
             this.grpNewField.Size = new System.Drawing.Size(200, 158);
             this.grpNewField.TabIndex = 4;
@@ -199,10 +509,16 @@
             this.btnAddField.Text = "Create Field";
             this.btnAddField.TextAlign = System.Drawing.ContentAlignment.TopCenter;
             this.btnAddField.UseVisualStyleBackColor = true;
+            this.btnAddField.Click += new System.EventHandler(this.btnAddField_Click);
             // 
             // numFieldLength
             // 
             this.numFieldLength.Location = new System.Drawing.Point(61, 73);
+            this.numFieldLength.Maximum = new decimal(new int[] {
+            8000,
+            0,
+            0,
+            0});
             this.numFieldLength.Name = "numFieldLength";
             this.numFieldLength.Size = new System.Drawing.Size(132, 22);
             this.numFieldLength.TabIndex = 8;
@@ -306,121 +622,26 @@
             this.cmbDynamicEntities.Size = new System.Drawing.Size(201, 24);
             this.cmbDynamicEntities.TabIndex = 1;
             // 
-            // listFields
+            // lstFields
             // 
-            this.listFields.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            this.lstFields.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left)));
-            this.listFields.FormattingEnabled = true;
-            this.listFields.ItemHeight = 16;
-            this.listFields.Location = new System.Drawing.Point(6, 97);
-            this.listFields.Name = "listFields";
-            this.listFields.Size = new System.Drawing.Size(201, 68);
-            this.listFields.TabIndex = 0;
+            this.lstFields.FormattingEnabled = true;
+            this.lstFields.ItemHeight = 16;
+            this.lstFields.Location = new System.Drawing.Point(6, 97);
+            this.lstFields.Name = "lstFields";
+            this.lstFields.Size = new System.Drawing.Size(201, 116);
+            this.lstFields.TabIndex = 0;
             // 
-            // btnSelectAll
+            // chkTransactional
             // 
-            this.btnSelectAll.Location = new System.Drawing.Point(6, 132);
-            this.btnSelectAll.Name = "btnSelectAll";
-            this.btnSelectAll.Size = new System.Drawing.Size(75, 23);
-            this.btnSelectAll.TabIndex = 2;
-            this.btnSelectAll.Text = "Select All";
-            this.btnSelectAll.UseVisualStyleBackColor = true;
-            // 
-            // btnSelectFilter
-            // 
-            this.btnSelectFilter.Location = new System.Drawing.Point(87, 132);
-            this.btnSelectFilter.Name = "btnSelectFilter";
-            this.btnSelectFilter.Size = new System.Drawing.Size(108, 23);
-            this.btnSelectFilter.TabIndex = 3;
-            this.btnSelectFilter.Text = "Select Filtered";
-            this.btnSelectFilter.UseVisualStyleBackColor = true;
-            // 
-            // btnNew
-            // 
-            this.btnNew.Location = new System.Drawing.Point(201, 132);
-            this.btnNew.Name = "btnNew";
-            this.btnNew.Size = new System.Drawing.Size(75, 23);
-            this.btnNew.TabIndex = 4;
-            this.btnNew.Text = "New";
-            this.btnNew.UseVisualStyleBackColor = true;
-            // 
-            // grpFilter
-            // 
-            this.grpFilter.Controls.Add(this.label7);
-            this.grpFilter.Controls.Add(this.txtFilterValue);
-            this.grpFilter.Controls.Add(this.label8);
-            this.grpFilter.Controls.Add(this.cmbComparison);
-            this.grpFilter.Controls.Add(this.cmbFields);
-            this.grpFilter.Location = new System.Drawing.Point(6, 11);
-            this.grpFilter.Name = "grpFilter";
-            this.grpFilter.Size = new System.Drawing.Size(285, 114);
-            this.grpFilter.TabIndex = 5;
-            this.grpFilter.TabStop = false;
-            this.grpFilter.Text = "Filter";
-            // 
-            // label7
-            // 
-            this.label7.AutoSize = true;
-            this.label7.Location = new System.Drawing.Point(13, 84);
-            this.label7.Name = "label7";
-            this.label7.Size = new System.Drawing.Size(44, 17);
-            this.label7.TabIndex = 38;
-            this.label7.Text = "Value";
-            // 
-            // txtFilterValue
-            // 
-            this.txtFilterValue.Location = new System.Drawing.Point(126, 81);
-            this.txtFilterValue.Name = "txtFilterValue";
-            this.txtFilterValue.Size = new System.Drawing.Size(149, 22);
-            this.txtFilterValue.TabIndex = 37;
-            // 
-            // label8
-            // 
-            this.label8.AutoSize = true;
-            this.label8.Location = new System.Drawing.Point(13, 54);
-            this.label8.Name = "label8";
-            this.label8.Size = new System.Drawing.Size(83, 17);
-            this.label8.TabIndex = 36;
-            this.label8.Text = "Comparison";
-            // 
-            // cmbComparison
-            // 
-            this.cmbComparison.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cmbComparison.FormattingEnabled = true;
-            this.cmbComparison.Location = new System.Drawing.Point(126, 51);
-            this.cmbComparison.Name = "cmbComparison";
-            this.cmbComparison.Size = new System.Drawing.Size(149, 24);
-            this.cmbComparison.TabIndex = 35;
-            // 
-            // cmbFields
-            // 
-            this.cmbFields.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cmbFields.FormattingEnabled = true;
-            this.cmbFields.Location = new System.Drawing.Point(13, 21);
-            this.cmbFields.Name = "cmbFields";
-            this.cmbFields.Size = new System.Drawing.Size(262, 24);
-            this.cmbFields.TabIndex = 34;
-            // 
-            // chkLimitResults
-            // 
-            this.chkLimitResults.AutoSize = true;
-            this.chkLimitResults.Checked = true;
-            this.chkLimitResults.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.chkLimitResults.Location = new System.Drawing.Point(98, 208);
-            this.chkLimitResults.Name = "chkLimitResults";
-            this.chkLimitResults.Size = new System.Drawing.Size(213, 21);
-            this.chkLimitResults.TabIndex = 40;
-            this.chkLimitResults.Text = "Max 10.000 displayed results";
-            this.chkLimitResults.UseVisualStyleBackColor = true;
-            // 
-            // btnDelete
-            // 
-            this.btnDelete.Location = new System.Drawing.Point(6, 161);
-            this.btnDelete.Name = "btnDelete";
-            this.btnDelete.Size = new System.Drawing.Size(75, 23);
-            this.btnDelete.TabIndex = 41;
-            this.btnDelete.Text = "Delete";
-            this.btnDelete.UseVisualStyleBackColor = true;
+            this.chkTransactional.AutoSize = true;
+            this.chkTransactional.Location = new System.Drawing.Point(247, 87);
+            this.chkTransactional.Name = "chkTransactional";
+            this.chkTransactional.Size = new System.Drawing.Size(116, 21);
+            this.chkTransactional.TabIndex = 60;
+            this.chkTransactional.Text = "Transactional";
+            this.chkTransactional.UseVisualStyleBackColor = true;
             // 
             // DynamicEntityTests
             // 
@@ -428,19 +649,23 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.Controls.Add(this.grpDynamicEntity);
             this.Name = "DynamicEntityTests";
-            this.Size = new System.Drawing.Size(930, 414);
+            this.Size = new System.Drawing.Size(826, 535);
             this.grpDynamicEntity.ResumeLayout(false);
             this.grpDynamicEntity.PerformLayout();
             this.grpTests.ResumeLayout(false);
             this.grpTests.PerformLayout();
+            this.groupBox1.ResumeLayout(false);
+            this.groupBox1.PerformLayout();
+            this.grpItemActions.ResumeLayout(false);
+            this.grpItemActions.PerformLayout();
+            this.grpFilter.ResumeLayout(false);
+            this.grpFilter.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvDynamicEntities)).EndInit();
             this.grpNewEntity.ResumeLayout(false);
             this.grpNewEntity.PerformLayout();
             this.grpNewField.ResumeLayout(false);
             this.grpNewField.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numFieldLength)).EndInit();
-            this.grpFilter.ResumeLayout(false);
-            this.grpFilter.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -448,7 +673,7 @@
         #endregion
 
         private System.Windows.Forms.GroupBox grpDynamicEntity;
-        private System.Windows.Forms.ListBox listFields;
+        private System.Windows.Forms.ListBox lstFields;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.ComboBox cmbDynamicEntities;
@@ -469,10 +694,7 @@
         private System.Windows.Forms.Label label6;
         private System.Windows.Forms.GroupBox grpTests;
         private System.Windows.Forms.DataGridView dgvDynamicEntities;
-        private System.Windows.Forms.PropertyGrid propertyGrid1;
-        private System.Windows.Forms.Button btnNew;
-        private System.Windows.Forms.Button btnSelectFilter;
-        private System.Windows.Forms.Button btnSelectAll;
+        private System.Windows.Forms.PropertyGrid pgrItemEditor;
         private System.Windows.Forms.CheckBox chkLimitResults;
         private System.Windows.Forms.GroupBox grpFilter;
         private System.Windows.Forms.Label label7;
@@ -480,6 +702,26 @@
         private System.Windows.Forms.Label label8;
         private System.Windows.Forms.ComboBox cmbComparison;
         private System.Windows.Forms.ComboBox cmbFields;
+        private System.Windows.Forms.GroupBox grpItemActions;
+        private System.Windows.Forms.CheckBox chkCascadeItemActions;
+        private System.Windows.Forms.Button btnUpdate;
+        private System.Windows.Forms.Button btnInsertOrUpdate;
+        private System.Windows.Forms.Button btnInsert;
         private System.Windows.Forms.Button btnDelete;
+        private System.Windows.Forms.GroupBox groupBox1;
+        private System.Windows.Forms.Button btnDeleteFiltered;
+        private System.Windows.Forms.Button btnBulkInsertOrUpdate;
+        private System.Windows.Forms.Button btnBulkInsert;
+        private System.Windows.Forms.Button btnDropAndCreate;
+        private System.Windows.Forms.Button btnCount;
+        private System.Windows.Forms.Button btnNew;
+        private System.Windows.Forms.Button btnSelectFilter;
+        private System.Windows.Forms.Button btnSelectAll;
+        private System.Windows.Forms.Button btnRegister;
+        private System.Windows.Forms.Button btnReverseEngineering;
+        private System.Windows.Forms.Panel pnlModified;
+        private System.Windows.Forms.Label lblMessage;
+        private System.Windows.Forms.Button btnReport;
+        private System.Windows.Forms.CheckBox chkTransactional;
     }
 }

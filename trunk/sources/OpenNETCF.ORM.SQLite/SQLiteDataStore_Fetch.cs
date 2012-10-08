@@ -28,7 +28,7 @@ namespace OpenNETCF.ORM
 {
     public partial class SQLiteDataStore
     {
-        public override object[] Fetch(Type entityType, int fetchCount, int firstRowOffset, string sortField, FieldSearchOrder sortOrder, FilterCondition filter, bool fillReferences, bool filterReferences)
+        public override object[] Fetch(Type entityType, int fetchCount, int firstRowOffset, string sortField, FieldOrder sortOrder, FilterCondition filter, bool fillReferences, bool filterReferences)
         {
             throw new NotSupportedException("Fetch is not currently supported with this Provider.");
         }
