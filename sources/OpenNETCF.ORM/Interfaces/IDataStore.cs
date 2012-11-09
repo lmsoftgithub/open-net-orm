@@ -27,6 +27,7 @@ namespace OpenNETCF.ORM
         void RegisterEntity(EntityInfo entity);
 
         void CreateStore();
+        void CreateOrUpdateStore();
         void DeleteStore();
         bool StoreExists { get; }
         void EnsureCompatibility();
@@ -71,7 +72,9 @@ namespace OpenNETCF.ORM
         object[] Select(String entityName);
         object[] Select(String entityName, bool fillReferences);
         object[] Select(String entityName, object primaryKey, bool fillReferences);
+        object[] Select(String entityName, object primaryKey, bool fillReferences, bool filterReferences);
         object[] Select(String entityName, IEnumerable<FilterCondition> filters, bool fillReferences);
+        object[] Select(String entityName, IEnumerable<FilterCondition> filters, bool fillReferences, bool filterReferences);
 
         void Update(object item);
         void Update(object item, bool cascadeUpdates, string fieldName);

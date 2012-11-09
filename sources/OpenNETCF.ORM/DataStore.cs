@@ -80,6 +80,7 @@ namespace OpenNETCF.ORM
         public abstract object[] Select(String entityName);
         public abstract object[] Select(String entityName, bool fillReferences);
         public abstract object[] Select(String entityName, object primaryKey, bool fillReferences);
+        public abstract object[] Select(String entityName, object primaryKey, bool fillReferences, bool filterReferences);
         public abstract object[] Select(String entityName, IEnumerable<FilterCondition> filters, bool fillReferences);
         public abstract object[] Select(String entityName, IEnumerable<FilterCondition> filters, bool fillReferences, bool filterReferences);
 

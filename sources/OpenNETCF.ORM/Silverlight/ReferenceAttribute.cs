@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Linq;
-using System.Collections.Generic;
-using System.Text;
 using System.Reflection;
 
 namespace OpenNETCF.ORM
@@ -10,8 +7,7 @@ namespace OpenNETCF.ORM
     {
         OneToMany,
         ManyToMany,
-        ManyToOne,
-        OneToOne
+        ManyToOne
     }
 
     [AttributeUsage(AttributeTargets.Property)]
@@ -23,25 +19,17 @@ namespace OpenNETCF.ORM
         public PropertyInfo PropertyInfo { get; internal set; }
         public bool CascadeDelete { get; set; }
         public ReferenceType ReferenceType { get; set; }
-        public string ConditionField { get; set; }
+        public String ConditionField { get; set; }
         public object ConditionValue { get; set; }
-        public string MappingTable { get; set; }
-        public string ReferenceColumn { get; set; }
-
-        public bool IsArray { get; internal set; }
-        public bool IsList { get; internal set; }
 
         public ReferenceAttribute(Type referenceEntityType, string referenceField)
         {
             ReferenceEntityType = referenceEntityType;
             ReferenceField = referenceField;
             Autofill = false;
-            ReferenceType = ReferenceType.OneToMany;
             ConditionField = "";
             ConditionValue = true;
-            MappingTable = "";
-            CascadeDelete = true;
-            ReferenceColumn = "";
+            ReferenceType = ReferenceType.OneToMany;
         }
 
         public bool Equals(ReferenceAttribute other)
@@ -56,3 +44,4 @@ namespace OpenNETCF.ORM
         }
     }
 }
+

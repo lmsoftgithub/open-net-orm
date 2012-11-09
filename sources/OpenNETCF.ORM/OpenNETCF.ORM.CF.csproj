@@ -77,6 +77,10 @@
     <Compile Include="EntityInfo.cs" />
     <Compile Include="EntityInfoCollection.cs" />
     <Compile Include="DataStore.cs" />
+    <Compile Include="DynamicEntities\DynamicEntity.cs" />
+    <Compile Include="DynamicEntities\DynamicEntityDefinition.cs" />
+    <Compile Include="DynamicEntities\FieldCollection.cs" />
+    <Compile Include="DynamicEntities\FieldValue.cs" />
     <Compile Include="Entity.cs" />
     <Compile Include="SQL Store Base\SqlFilterCondition.cs" />
     <Compile Include="FilterCondition.cs" />
@@ -89,6 +93,7 @@
     <Compile Include="SQL Store Base\SqlEntityInfo.cs" />
     <Compile Include="SQL Store Base\SQLStoreBase.cs" />
     <Compile Include="GenericComparer.cs" />
+    <Compile Include="EventArgs.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CompactFramework.CSharp.targets" />
   <ProjectExtensions>
