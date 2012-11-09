@@ -65,6 +65,10 @@
     <Compile Include="Constants\FieldSearchOrder.cs" />
     <Compile Include="DataStore.cs" />
     <Compile Include="DbType.cs" />
+    <Compile Include="DynamicEntities\DynamicEntity.cs" />
+    <Compile Include="DynamicEntities\DynamicEntityDefinition.cs" />
+    <Compile Include="DynamicEntities\FieldCollection.cs" />
+    <Compile Include="DynamicEntities\FieldValue.cs" />
     <Compile Include="Entity.cs" />
     <Compile Include="EntityInfo.cs" />
     <Compile Include="EntityInfoCollection.cs" />
@@ -84,6 +88,7 @@
     <Compile Include="SQL Store Base\SQLStoreBase.cs" />
     <Compile Include="SqlDateTimeDefault.cs" />
     <Compile Include="GenericComparer.cs" />
+    <Compile Include="EventArgs.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Microsoft\Silverlight for Phone\$(TargetFrameworkVersion)\Microsoft.Silverlight.$(TargetFrameworkProfile).Overrides.targets" />
   <Import Project="$(MSBuildExtensionsPath)\Microsoft\Silverlight for Phone\$(TargetFrameworkVersion)\Microsoft.Silverlight.CSharp.targets" />

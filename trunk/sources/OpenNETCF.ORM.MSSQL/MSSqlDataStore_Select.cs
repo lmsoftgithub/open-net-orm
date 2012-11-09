@@ -66,6 +66,7 @@ namespace OpenNETCF.ORM
             SqlEntityInfo entity = m_entities[entityName];
             var isDynamicEntity = entity is DynamicEntityInfo;
 
+            var bConnectionIsNew = connection == null;
             if (connection == null) connection = GetConnection(false);
             SqlCommand command = null;
 
@@ -152,7 +153,7 @@ namespace OpenNETCF.ORM
                                 }
                                 item = dynamic;
                             }
-                            else if (entity.CreateProxy != null)
+                            else if (entity.CreateProxy == null)
                             {
                                 if (entity.DefaultConstructor == null)
                                     item = Activator.CreateInstance(entity.EntityType);
@@ -241,7 +242,8 @@ namespace OpenNETCF.ORM
                 }
 
                 FlushReferenceTableCache();
-                DoneWithConnection(connection, false);
+               if (bConnectionIsNew)
+                   DoneWithConnection(connection, false);
             }
             
             return items.ToArray();

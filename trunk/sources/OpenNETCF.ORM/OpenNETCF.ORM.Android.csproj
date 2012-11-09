@@ -56,6 +56,10 @@
     <Compile Include="Constants\DefaultType.cs" />
     <Compile Include="Constants\FieldSearchOrder.cs" />
     <Compile Include="DataStore.cs" />
+    <Compile Include="DynamicEntities\DynamicEntity.cs" />
+    <Compile Include="DynamicEntities\DynamicEntityDefinition.cs" />
+    <Compile Include="DynamicEntities\FieldCollection.cs" />
+    <Compile Include="DynamicEntities\FieldValue.cs" />
     <Compile Include="Entity.cs" />
     <Compile Include="EntityInfo.cs" />
     <Compile Include="EntityInfoCollection.cs" />
@@ -73,6 +77,7 @@
     <Compile Include="SQL Store Base\SQLStoreBase.cs" />
     <Compile Include="SqlDateTimeDefault.cs" />
     <Compile Include="GenericComparer.cs" />
+    <Compile Include="EventArgs.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Novell\Novell.MonoDroid.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

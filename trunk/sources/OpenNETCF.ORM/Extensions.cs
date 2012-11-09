@@ -44,6 +44,8 @@ namespace OpenNETCF.ORM
                     return isNullable ? typeof(DateTime?) : typeof(DateTime);
                 case DbType.Decimal:
                     return isNullable ? typeof(decimal?) : typeof(decimal);
+                case DbType.Currency:
+                    return isNullable ? typeof(decimal?) : typeof(decimal);
                 case DbType.Double:
                     return isNullable ? typeof(double?) : typeof(double);
                 case DbType.Int64:

@@ -1041,7 +1041,7 @@ namespace OpenNETCF.ORM
             {
                 filters.Add(new FilterCondition(field.FieldName, field.PropertyInfo.GetValue(item, null), FilterCondition.FilterOperator.Equals));
             }
-            var existing = Select(itemType.ToString(), filters, -1, -1, false, false, connection).FirstOrDefault();
+            var existing = Select(entityName, filters, -1, -1, false, false, connection).FirstOrDefault();
 
             return existing != null;
         }
@@ -1241,6 +1241,10 @@ namespace OpenNETCF.ORM
         {
             return Select(entityName, null, primaryKey, -1, 0, fillReferences, false, null);
         }
+        public override object[] Select(String entityName, object primaryKey, bool fillReferences, bool filterReferences)
+        {
+            return Select(entityName, null, primaryKey, -1, 0, fillReferences, filterReferences, null);
+        }
         public override object[] Select(String entityName, IEnumerable<FilterCondition> filters, bool fillReferences)
         {
             return Select(entityName, filters, -1, 0, fillReferences, false, null);
@@ -1346,7 +1350,7 @@ namespace OpenNETCF.ORM
             if (isCount)
             {
                 FieldAttribute fa = (from FieldAttribute el in Entities[entityName].Fields
-                                    where el.IsPrimaryKey || el.SearchOrder != FieldOrder.None
+                                     where el.IsPrimaryKey || el.SearchOrder != FieldOrder.None
                                     select el).FirstOrDefault<FieldAttribute>();
                 if (fa == null)
                 {
@@ -1393,7 +1397,7 @@ namespace OpenNETCF.ORM
                 sb.Append(" ORDER BY ");
                 foreach (FieldAttribute fa in Entities[entityName].SortingFields.OrderBy(d => d.SortSequence))
                 {
-                    if (fa.SortOrder == FieldOrder.Descending)
+                    if (fa.SearchOrder == FieldOrder.Descending)
                         sb.AppendFormat(" {0} DESC,", fa.FieldName);
                     else
                         sb.AppendFormat(" {0} ASC,", fa.FieldName);

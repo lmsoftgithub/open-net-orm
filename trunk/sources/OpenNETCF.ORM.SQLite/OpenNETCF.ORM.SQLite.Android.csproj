@@ -50,6 +50,21 @@
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SQLiteDataStore.cs" />
+    <Compile Include="SQLiteDataStore_Delete.cs">
+      <DependentUpon>SQLiteDataStore.cs</DependentUpon>
+    </Compile>
+    <Compile Include="SQLiteDataStore_Fetch.cs">
+      <DependentUpon>SQLiteDataStore.cs</DependentUpon>
+    </Compile>
+    <Compile Include="SQLiteDataStore_Insert.cs">
+      <DependentUpon>SQLiteDataStore.cs</DependentUpon>
+    </Compile>
+    <Compile Include="SQLiteDataStore_Select.cs">
+      <DependentUpon>SQLiteDataStore.cs</DependentUpon>
+    </Compile>
+    <Compile Include="SQLiteDataStore_Update.cs">
+      <DependentUpon>SQLiteDataStore.cs</DependentUpon>
+    </Compile>
     <Compile Include="SQLiteEntityInfo.cs" />
     <Compile Include="SQLiteException.cs" />
   </ItemGroup>
