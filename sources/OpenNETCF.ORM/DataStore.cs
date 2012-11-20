@@ -12,6 +12,16 @@ namespace OpenNETCF.ORM
     {
         protected EntityInfoCollection<TEntityInfo> m_entities = new EntityInfoCollection<TEntityInfo>();
 
+        protected SequentialGuidTypes _sequentialGuidType = SequentialGuidTypes.NotSequential;
+        protected bool _sequentialGuidCrypto = false; // Whether we base our guids on the Crypto lib (true) or on NewGuid()
+        public enum SequentialGuidTypes
+        {
+            NotSequential = 0,
+            SortedAsString = 1, // Oracle / MySQL
+            SortedAsBinary = 2,
+            SortedAtEnd = 3     // MS-SQL Server
+        }
+
         public event EventHandler<EntityTypeAddedArgs> EntityTypeAdded;
         public event EventHandler<EntityTypeChangedArgs> EntityTypeModified;
         public event EventHandler<EntitySelectArgs> BeforeSelect;
@@ -567,5 +577,46 @@ namespace OpenNETCF.ORM
             }
         }
 
+        public virtual Guid NewGuidComb()
+        {
+            Guid result = Guid.Empty;
+            if (this._sequentialGuidType != SequentialGuidTypes.NotSequential)
+            {
+                byte[] guid = null;
+                if (this._sequentialGuidCrypto)
+                {
+                    var rng = new System.Security.Cryptography.RNGCryptoServiceProvider();
+                    byte[] random = new byte[10];
+                    rng.GetBytes(random);
+                    Buffer.BlockCopy(random, 0, guid, 6, 10);
+                }
+                else
+                {
+                    guid = Guid.NewGuid().ToByteArray();
+                }
+                long timestamp = DateTime.Now.Ticks / 10000L;
+                byte[] timestampBytes = BitConverter.GetBytes(timestamp);
+                if (BitConverter.IsLittleEndian)
+                {
+                    Array.Reverse(timestampBytes);
+                }
+                switch (this._sequentialGuidType)
+                {
+                    case SequentialGuidTypes.SortedAsString:
+                    case SequentialGuidTypes.SortedAsBinary:
+                        Buffer.BlockCopy(timestampBytes, 2, guid, 0, 6);
+                        break;
+                    case SequentialGuidTypes.SortedAtEnd:
+                        Buffer.BlockCopy(timestampBytes, 2, guid, 10, 6);
+                        break;
+                }
+                result = new Guid(guid);
+            }
+            else
+            {
+                result = Guid.NewGuid();
+            }
+            return result;
+        }
     }
 }

@@ -122,5 +122,7 @@ namespace OpenNETCF.ORM
         bool FieldExists(String entityName, String fieldName);
         bool FieldExists(EntityInfo entityInfo, FieldAttribute fieldInfo);
         List<DynamicEntityInfo> ReverseEngineer();
+
+        Guid NewGuidComb();
     }
 }
