@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenNETCF.ORM.Firebird.CF", "OpenNETCF.ORM.Firebird.CF.csproj", "{5F5FB4F7-9ED1-4AFE-AA4E-9E4F83EA261E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenNETCF.ORM.CF", "..\OpenNETCF.ORM\OpenNETCF.ORM.CF.csproj", "{2D0EA40A-5C80-4477-A901-7648E57BA749}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5F5FB4F7-9ED1-4AFE-AA4E-9E4F83EA261E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5F5FB4F7-9ED1-4AFE-AA4E-9E4F83EA261E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5F5FB4F7-9ED1-4AFE-AA4E-9E4F83EA261E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5F5FB4F7-9ED1-4AFE-AA4E-9E4F83EA261E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2D0EA40A-5C80-4477-A901-7648E57BA749}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2D0EA40A-5C80-4477-A901-7648E57BA749}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2D0EA40A-5C80-4477-A901-7648E57BA749}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2D0EA40A-5C80-4477-A901-7648E57BA749}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
