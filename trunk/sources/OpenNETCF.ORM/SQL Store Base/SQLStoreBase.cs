@@ -144,15 +144,15 @@ namespace OpenNETCF.ORM
             Update(item, true, null);
         }
 
-        public override void Update(object item, string fieldName)
+        public override void Update(object item, List<string> fieldNames)
         {
-            Update(item, false, fieldName);
+            Update(item, false, fieldNames);
         }
-        public override void Update(object item, bool cascadeUpdates, string fieldName)
+        public override void Update(object item, bool cascadeUpdates, List<string> fieldNames)
         {
-            Update(item, cascadeUpdates, fieldName, false);
+            Update(item, cascadeUpdates, fieldNames, false);
         }
-        public override void Update(object item, bool cascadeUpdates, string fieldName, bool transactional)
+        public override void Update(object item, bool cascadeUpdates, List<string> fieldNames, bool transactional)
         {
             IDbTransaction transaction = null;
             IDbConnection connection = null;
@@ -162,7 +162,7 @@ namespace OpenNETCF.ORM
                 connection = GetConnection(false);
             try
             {
-                Update(item, cascadeUpdates, fieldName, connection, transaction);
+                Update(item, cascadeUpdates, fieldNames, connection, transaction);
                 if (transaction != null) transaction.Commit();
             }
             catch
@@ -176,7 +176,7 @@ namespace OpenNETCF.ORM
                 DoneWithConnection(connection, false);
             }
         }
-        protected abstract void Update(object item, bool cascadeUpdates, string fieldName, IDbConnection connection, IDbTransaction transaction);
+        protected abstract void Update(object item, bool cascadeUpdates, List<string> fieldNames, IDbConnection connection, IDbTransaction transaction);
 
         public override void BulkInsert(object items, bool insertReferences)
         {
@@ -1506,7 +1506,7 @@ namespace OpenNETCF.ORM
             return sb.ToString();
         }
 
-        protected virtual void CascadeUpdates(object item, string fieldName, object keyValue, EntityInfo entity, IDbConnection connection, IDbTransaction transaction)
+        protected virtual void CascadeUpdates(object item, List<string> fieldNames, object keyValue, EntityInfo entity, IDbConnection connection, IDbTransaction transaction)
         {
             if (keyValue == null && entity.Fields.KeyField != null)
             {
@@ -1535,7 +1535,7 @@ namespace OpenNETCF.ORM
                         }
                         else
                         {
-                            Update(refItem, true, fieldName, connection, transaction);
+                            Update(refItem, true, fieldNames, connection, transaction);
                         }
                     }
                 }

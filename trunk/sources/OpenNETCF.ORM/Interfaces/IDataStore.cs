@@ -77,9 +77,9 @@ namespace OpenNETCF.ORM
         object[] Select(String entityName, IEnumerable<FilterCondition> filters, bool fillReferences, bool filterReferences);
 
         void Update(object item);
-        void Update(object item, bool cascadeUpdates, string fieldName);
-        void Update(object item, bool cascadeUpdates, string fieldName, bool transactional);
-        void Update(object item, string fieldName);
+        void Update(object item, bool cascadeUpdates, List<string> fieldNames);
+        void Update(object item, bool cascadeUpdates, List<string> fieldNames, bool transactional);
+        void Update(object item, List<string> fieldNames);
 
         int Delete(object item, bool cascade);
         int Delete<T>(object primaryKey, bool cascade);
