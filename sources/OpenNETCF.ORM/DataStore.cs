@@ -95,9 +95,9 @@ namespace OpenNETCF.ORM
         public abstract object[] Select(String entityName, IEnumerable<FilterCondition> filters, bool fillReferences, bool filterReferences);
 
         public abstract void Update(object item);
-        public abstract void Update(object item, bool cascadeUpdates, string fieldName);
-        public abstract void Update(object item, bool cascadeUpdates, string fieldName,  bool transactional);
-        public abstract void Update(object item, string fieldName);
+        public abstract void Update(object item, bool cascadeUpdates, List<string> fieldNames);
+        public abstract void Update(object item, bool cascadeUpdates, List<string> fieldNames, bool transactional);
+        public abstract void Update(object item, List<string> fieldNames);
         
         public abstract void FillReferences(object instance);
         public abstract void FillReferences(object instance, bool filterReferences);
@@ -582,19 +582,19 @@ namespace OpenNETCF.ORM
             Guid result = Guid.Empty;
             if (this._sequentialGuidType != SequentialGuidTypes.NotSequential)
             {
-                byte[] guid = null;
+                byte[] guid = new byte[16];
+                byte[] random = null;
                 if (this._sequentialGuidCrypto)
                 {
                     var rng = new System.Security.Cryptography.RNGCryptoServiceProvider();
-                    byte[] random = new byte[10];
+                    random = new byte[10];
                     rng.GetBytes(random);
-                    Buffer.BlockCopy(random, 0, guid, 6, 10);
                 }
                 else
                 {
                     guid = Guid.NewGuid().ToByteArray();
                 }
-                long timestamp = DateTime.Now.Ticks / 10000L;
+                long timestamp = DateTime.Now.Ticks / 100L;
                 byte[] timestampBytes = BitConverter.GetBytes(timestamp);
                 if (BitConverter.IsLittleEndian)
                 {
@@ -604,10 +604,14 @@ namespace OpenNETCF.ORM
                 {
                     case SequentialGuidTypes.SortedAsString:
                     case SequentialGuidTypes.SortedAsBinary:
-                        Buffer.BlockCopy(timestampBytes, 2, guid, 0, 6);
+                        if (this._sequentialGuidCrypto)
+                            Buffer.BlockCopy(random, 0, guid, 8, 8);
+                        Buffer.BlockCopy(timestampBytes, 2, guid, 0, 8);
                         break;
                     case SequentialGuidTypes.SortedAtEnd:
-                        Buffer.BlockCopy(timestampBytes, 2, guid, 10, 6);
+                        if (this._sequentialGuidCrypto)
+                            Buffer.BlockCopy(random, 0, guid, 0, 8);
+                        Buffer.BlockCopy(timestampBytes, 2, guid, 8, 8);
                         break;
                 }
                 result = new Guid(guid);

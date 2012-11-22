@@ -10,7 +10,7 @@ namespace OpenNETCF.ORM
 {
     partial class SqlCeDataStore
     {
-        protected override void Update(object item, bool cascadeUpdates, string fieldName, IDbConnection connection, IDbTransaction transaction)
+        protected override void Update(object item, bool cascadeUpdates, List<string> fieldNames, IDbConnection connection, IDbTransaction transaction)
         {
             var isDynamicEntity = item is DynamicEntity;
             string entityName = null;
@@ -39,6 +39,9 @@ namespace OpenNETCF.ORM
             Boolean bInheritedConnection = connection != null;
             if (transaction == null && connection == null)
                 connection = GetConnection(false);
+            // TODO: Make multiple fieldnames possible!
+            string fieldName = null;
+            if (fieldNames != null && fieldNames.Count > 0) fieldName = fieldNames[0];
             try
             {
                 CheckPrimaryKeyIndex(entityName);
@@ -171,7 +174,7 @@ namespace OpenNETCF.ORM
                 }
                 if (cascadeUpdates)
                 {
-                    CascadeUpdates(item, fieldName, null, entity, connection, transaction);
+                    CascadeUpdates(item, fieldNames, null, entity, connection, transaction);
                 }
                 OnAfterUpdate(item, cascadeUpdates, fieldName, DateTime.Now.Subtract(start), "tableDirect");
             }

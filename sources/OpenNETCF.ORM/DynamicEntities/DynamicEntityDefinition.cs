@@ -99,17 +99,17 @@ namespace OpenNETCF.ORM
 
         public System.Xml.XmlDocument ToXML()
         {
-            System.Xml.XmlDocument xdoc = null;
+            //System.Xml.XmlDocument xdoc = null;
             try
             {
                 throw new NotImplementedException();
             }
             catch (Exception ex)
             {
-                xdoc = null;
+                //xdoc = null;
                 throw ex;
             }
-            return xdoc;
+            //return xdoc;
         }
     }
 }
