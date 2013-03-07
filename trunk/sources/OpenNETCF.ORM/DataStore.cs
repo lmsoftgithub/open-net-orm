@@ -32,6 +32,7 @@ namespace OpenNETCF.ORM
         public event EventHandler<EntityUpdateArgs> AfterUpdate;
         public event EventHandler<EntityDeleteArgs> BeforeDelete;
         public event EventHandler<EntityDeleteArgs> AfterDelete;
+        public event EventHandler<SqlStatementArgs> SqlStatementCreated;
 
         // TODO: maybe move these to another object since they're more "admin" related?
         public abstract void CreateStore();
@@ -574,6 +575,22 @@ namespace OpenNETCF.ORM
             if (AfterSelect != null)
             {
                 AfterSelect(this, new EntitySelectArgs(entity, filters, fillReferences) { Timespan = executionTime, Data = sqlQuery });
+            }
+        }
+
+        public virtual void OnSqlStatementCreated(string query, List<FilterCondition> filters, List<System.Data.IDataParameter> parameters)
+        {
+            if (SqlStatementCreated != null)
+            {
+                SqlStatementCreated(this, new SqlStatementArgs(query, filters, parameters) { });
+            }
+        }
+
+        public virtual void OnSqlStatementCreated(System.Data.IDbCommand command, List<FilterCondition> filters)
+        {
+            if (SqlStatementCreated != null)
+            {
+                SqlStatementCreated(this, new SqlStatementArgs(command, filters) { });
             }
         }
 

@@ -154,7 +154,7 @@ namespace EntityGenerator.Services
                 attrList.Add(new CodeAttributeArgument(new CodeSnippetExpression("IsPrimaryKey=true")));
             }
 
-            if (field.SearchOrder != FieldSearchOrder.NotSearchable)
+            if (field.SearchOrder != FieldOrder.None)
             {
                 attrList.Add(new CodeAttributeArgument(new CodeSnippetExpression("SearchOrder=FieldSearchOrder." + field.SearchOrder.ToString())));
             }

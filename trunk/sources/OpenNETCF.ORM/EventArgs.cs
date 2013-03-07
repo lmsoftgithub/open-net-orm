@@ -118,4 +118,34 @@ namespace OpenNETCF.ORM
         public object Data { get; set; }
         public TimeSpan Timespan { get; set; }
     }
+
+    public class SqlStatementArgs : EventArgs
+    {
+        internal SqlStatementArgs(string query, List<FilterCondition> filters, List<System.Data.IDataParameter> parameters)
+        {
+            Query = query;
+            Filters = filters;
+            Parameters = parameters;
+            TimeStamp = DateTime.Now;
+        }
+        internal SqlStatementArgs(System.Data.IDbCommand command, List<FilterCondition> filters)
+        {
+            Query = command.CommandText;
+            Filters = filters;
+            if (command.Parameters != null)
+            {
+                var list = new List<System.Data.IDataParameter>();
+                foreach (var param in command.Parameters)
+                    list.Add((System.Data.IDataParameter)param);
+                Parameters = list;
+            }
+            TimeStamp = DateTime.Now;
+        }
+
+        public String Query { get; set; }
+        public IEnumerable<FilterCondition> Filters { get; set; }
+        public IEnumerable<System.Data.IDataParameter> Parameters { get; set; }
+        public DateTime TimeStamp { get; set; }
+    }
+
 }

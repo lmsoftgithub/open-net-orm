@@ -55,7 +55,7 @@ namespace OpenNETCF.ORM.SQLite.Integration.Test
             Assert.IsTrue(exists);
 
             // DELETE
-            store.Delete(itemA);
+            store.Delete(itemA,false);
             item = store.Select<TestItem>("Name", itemA.Name).FirstOrDefault();
             Assert.IsNull(item);
 

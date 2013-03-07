@@ -19,9 +19,9 @@ namespace OpenNETCF.ORM
         public bool IsPrimaryKey { get; set; }
         public bool RequireUniqueValue { get; set; }
         public int Ordinal { get; set; }
-        public FieldSearchOrder SearchOrder { get; set; }
+        public FieldOrder SearchOrder { get; set; }
         public String Default { get; set; }
-        public FieldSearchOrder SortOrder { get; set; }
+        public FieldOrder SortOrder { get; set; }
         public int SortSequence { get; set; }
 
         /// <summary>

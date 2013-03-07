@@ -264,6 +264,7 @@ namespace OpenNETCF.ORM
                 using (var command = GetNewCommandObject())
                 {
                     command.CommandText = sql;
+                    OnSqlStatementCreated(command, null);
                     command.Connection = connection;
                     using (var reader = command.ExecuteReader() as SQLiteDataReader)
                     {
@@ -303,6 +304,7 @@ namespace OpenNETCF.ORM
                 {
                     command.Connection = connection;
                     command.CommandText = sql;
+                    OnSqlStatementCreated(command, null);
                     using (var reader = command.ExecuteReader())
                     {
                         List<string> nameList = new List<string>();
@@ -335,6 +337,7 @@ namespace OpenNETCF.ORM
                 using (var command = GetNewCommandObject())
                 {
                     command.CommandText = String.Format("PRAGMA table_info('{0}')", entity.EntityName, field.FieldName);
+                    OnSqlStatementCreated(command, null);
                     command.Connection = connection;
                     using (var results = command.ExecuteReader())
                     {
