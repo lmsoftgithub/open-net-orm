@@ -92,6 +92,7 @@ namespace OpenNETCF.ORM
                     sql.AppendFormat(" FROM {0} {1}", entityName, where.ToString());
 
                     command.CommandText = sql.ToString();
+                    OnSqlStatementCreated(command, null);
                     command.CommandType = CommandType.Text;
 
                     var updateSQL = new StringBuilder(string.Format("UPDATE {0} SET ", entityName));
@@ -233,6 +234,7 @@ namespace OpenNETCF.ORM
                                     insertCommand.Parameters.Add(new SqlParameter(String.Format("@{0}", field.FieldName), keyValue));
                                 }
                                 insertCommand.CommandText = updateSQL.ToString();
+                                OnSqlStatementCreated(insertCommand, null);
                                 if (transaction == null)
                                 {
                                     insertCommand.Connection = connection as SqlConnection;

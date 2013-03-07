@@ -17,6 +17,7 @@ namespace OpenNETCF.ORM
         event EventHandler<EntityUpdateArgs> AfterUpdate;
         event EventHandler<EntityDeleteArgs> BeforeDelete;
         event EventHandler<EntityDeleteArgs> AfterDelete;
+        event EventHandler<SqlStatementArgs> SqlStatementCreated;
 
         string Name { get; }
 

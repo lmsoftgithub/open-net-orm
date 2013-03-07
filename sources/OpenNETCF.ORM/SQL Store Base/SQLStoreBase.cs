@@ -428,6 +428,7 @@ namespace OpenNETCF.ORM
                 using (var command = GetNewCommandObject())
                 {
                     command.CommandText = sql;
+                    OnSqlStatementCreated(command, null);
                     command.Connection = connection;
                     return command.ExecuteNonQuery();
                 }
@@ -454,6 +455,7 @@ namespace OpenNETCF.ORM
                 {
                     command.Connection = connection;
                     command.CommandText = sql;
+                    OnSqlStatementCreated(command, null);
                     return command.ExecuteScalar();
                 }
             }
@@ -589,6 +591,7 @@ namespace OpenNETCF.ORM
                 {
                     command.CommandText = sql.ToString();
                     command.Connection = connection;
+                    OnSqlStatementCreated(command, null);
                     int i = command.ExecuteNonQuery();
                 }
                 bTableExists = true;
@@ -623,6 +626,7 @@ namespace OpenNETCF.ORM
                         {
                             command.CommandText = sql.ToString();
                             command.Connection = connection;
+                            OnSqlStatementCreated(command, null);
                             int i = command.ExecuteNonQuery();
                         }
                         // create indexes
@@ -722,6 +726,7 @@ namespace OpenNETCF.ORM
                 {
                     command.CommandText = String.Format("select count(*) from Information_SCHEMA.columns where table_name='{0}' and column_name='{1}'", entity.EntityName, field.FieldName);
                     command.Connection = connection;
+                    OnSqlStatementCreated(command, null);
                     exists = (int)command.ExecuteScalar() > 0;
                 }
             }
@@ -735,6 +740,7 @@ namespace OpenNETCF.ORM
                     {
                         command.CommandText = String.Format("select {1} from {0} where 1 = 0", entity.EntityName, field.FieldName);
                         command.Connection = connection;
+                        OnSqlStatementCreated(command, null);
                         command.ExecuteNonQuery();
                     }
                 }
@@ -756,6 +762,7 @@ namespace OpenNETCF.ORM
                 {
                     command.CommandText = String.Format("select count(*) from information_schema.tables where table_name = '{0}'", entity.EntityName);
                     command.Connection = connection;
+                    OnSqlStatementCreated(command, null);
                     exists = (int)command.ExecuteScalar() == 1;
                 }
             }
@@ -769,6 +776,7 @@ namespace OpenNETCF.ORM
                     {
                         command.CommandText = String.Format("select 1 from {0} where 1 = 0", entity.EntityName);
                         command.Connection = connection;
+                        OnSqlStatementCreated(command, null);
                         command.ExecuteNonQuery();
                     }
                 }
@@ -822,7 +830,7 @@ namespace OpenNETCF.ORM
 
                     var sql = string.Format("SELECT COUNT(*) FROM information_schema.indexes WHERE INDEX_NAME = '{0}'", indexName);
                     command.CommandText = sql;
-
+                    OnSqlStatementCreated(command, null);
                     int i = (int)command.ExecuteScalar();
 
                     if (i == 0)
@@ -836,6 +844,7 @@ namespace OpenNETCF.ORM
                         Debug.WriteLine(sql);
 
                         command.CommandText = sql;
+                        OnSqlStatementCreated(command, null);
                         command.ExecuteNonQuery();
                     }
 
@@ -848,7 +857,7 @@ namespace OpenNETCF.ORM
                         , entityName, fieldName);
 
                     command.CommandText = sql;
-
+                    OnSqlStatementCreated(command, null);
                     using (var reader = command.ExecuteReader())
                     {
                         // this should always return true
@@ -1754,6 +1763,7 @@ namespace OpenNETCF.ORM
             {
                 command.Connection = connection;
                 command.CommandText = string.Format("DROP TABLE {0}", entity.EntityName);
+                OnSqlStatementCreated(command, null);
                 command.ExecuteNonQuery();
             }
         }
@@ -1943,6 +1953,7 @@ namespace OpenNETCF.ORM
                     }
                 }
                 command.CommandText = sb.ToString();
+                OnSqlStatementCreated(command, null);
                 var start = DateTime.Now;
                 var result = command.ExecuteNonQuery();
                 OnAfterDelete(m_entities[entityName], filters, DateTime.Now.Subtract(start), command.CommandText);
@@ -2278,6 +2289,7 @@ namespace OpenNETCF.ORM
                     {
                         command.Parameters.Add(param); 
                     }
+                    OnSqlStatementCreated(command, null);
                     var count = command.ExecuteScalar();
                     return Convert.ToInt32(count);
                 }

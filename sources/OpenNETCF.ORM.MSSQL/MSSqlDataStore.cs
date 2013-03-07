@@ -144,6 +144,7 @@ namespace OpenNETCF.ORM
 
                     var sql = string.Format("select COUNT(*) from sys.indexes where name = '{0}' and Object_ID = Object_ID(N'{1}')", indexName, entityName);
                     command.CommandText = sql;
+                    OnSqlStatementCreated(command, null);
 
                     int i = (int)command.ExecuteScalar();
 
@@ -158,6 +159,7 @@ namespace OpenNETCF.ORM
                         Debug.WriteLine(sql);
 
                         command.CommandText = sql;
+                        OnSqlStatementCreated(command, null);
                         command.ExecuteNonQuery();
                     }
 
@@ -170,7 +172,7 @@ namespace OpenNETCF.ORM
                         , entityName, fieldName);
 
                     command.CommandText = sql;
-
+                    OnSqlStatementCreated(command, null);
                     using (var reader = command.ExecuteReader())
                     {
                         // this should always return true
@@ -304,6 +306,7 @@ namespace OpenNETCF.ORM
                     "AND t.is_ms_shipped = 0 ", entityName);
                 IDbCommand command = GetNewCommandObject();
                 command.CommandText = sql;
+                OnSqlStatementCreated(command, null);
                 command.Connection = connection;
                 using (var reader = command.ExecuteReader())
                 {

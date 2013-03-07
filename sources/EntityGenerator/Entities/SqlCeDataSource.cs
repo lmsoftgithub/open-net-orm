@@ -70,7 +70,7 @@ namespace EntityGenerator.Entities
             public string IndexName { get; set; }
             public bool PrimaryKey { get; set; }
             public string ColumnName { get; set; }
-            public FieldSearchOrder SearchOrder { get; set; }
+            public FieldOrder SearchOrder { get; set; }
         }
 
         public EntityInfo[] GetEntityDefinitions()
@@ -103,7 +103,7 @@ namespace EntityGenerator.Entities
                                 var indexName = indexReader.GetString(0);
                                 var primaryKey = indexReader.GetBoolean(1);
                                 var columnName = indexReader.GetString(2);
-                                var sortOrder = indexReader.GetInt16(3) == 1 ? FieldSearchOrder.Ascending : FieldSearchOrder.Descending;
+                                var sortOrder = indexReader.GetInt16(3) == 1 ? FieldOrder.Ascending : FieldOrder.Descending;
                                 // collation of 1 == ascending, 2 == descending (based on a quick test, this might be incorrect)
 
                                 // TODO: handle cases where a column is in multiple indexes (ORM doesn't support that scenario for now)

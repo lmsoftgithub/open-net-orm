@@ -177,6 +177,7 @@ namespace OpenNETCF.ORM
                 using (var command = GetNewCommandObject())
                 {
                     command.CommandText = sql;
+                    OnSqlStatementCreated(command, null);
                     command.Connection = connection;
                     return command.ExecuteScalar() as string;
                 }
